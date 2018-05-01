@@ -137,7 +137,6 @@ class RestAPI:
                     return user.user.books.all()
         """
 
-
     def property(self, model, func=None, *, version=None, name=None):
         """
         Decorator that declares a read-only API property.

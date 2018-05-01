@@ -1,8 +1,8 @@
-from sidekick import Record, field
 from django.db.models import Model
+from sidekick import Record, field
 
 
-class model_route(Record):
+class Route(Record):
     """
     Define a route in routes.py
 

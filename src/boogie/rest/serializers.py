@@ -57,8 +57,8 @@ class RestAPISerializer(serializers.HyperlinkedModelSerializer):
         # Obtain absolute path
         lookup_field = (
             getattr(self.Meta, 'extra_kwargs', {})
-                .get('url', {})
-                .get('lookup_field', 'pk')
+            .get('url', {})
+            .get('lookup_field', 'pk')
         )
         kwargs = {lookup_field: getattr(obj, lookup_field)}
         return join_url(self.url_prefix,

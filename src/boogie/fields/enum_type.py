@@ -66,11 +66,11 @@ class DescriptionEnumMeta(enum.EnumMeta):
     """
 
     @classmethod
-    def __prepare__(mcs, cls, bases):
+    def __prepare__(meta, cls, bases):  # noqa: N804
         namespace = super().__prepare__(cls, bases)
         return Namespace(namespace)
 
-    def __init__(cls, name, bases, namespace):
+    def __init__(cls, name, bases, namespace):  # noqa: N805
         super().__init__(name, bases, namespace)
 
         # Handle enum values and store metadata
@@ -84,7 +84,7 @@ class DescriptionEnumMeta(enum.EnumMeta):
         for k, v in enum_values.items():
             setattr(cls, k + '_DESCRIPTION', v.description)
 
-    def _cls_get_description(cls, value):
+    def _cls_get_description(cls, value):  # noqa: N805
         """
         Get description from value.
         """

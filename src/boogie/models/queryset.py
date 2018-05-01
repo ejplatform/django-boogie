@@ -263,9 +263,9 @@ def getitem_1d(qs, item):
     # Slicing
     if isinstance(item, slice):
         start, stop, step = item.start, item.stop, item.step
-        if (step is None and
-                (start is None or start >= 0) and
-                (stop is None or stop >= 0)):
+        if step is None and \
+                (start is None or start >= 0) and \
+                (stop is None or stop >= 0):
             return super(QuerySet, qs).__getitem__(item)
 
     raise TypeError('invalid index type: %r' % item.__class__.__name__)
@@ -344,7 +344,6 @@ def get_column_names(cols, qs):
     """
     names = []
     append = names.append
-    unnamed = 0
     for col in cols:
         if isinstance(col, str):
             name = col

@@ -146,11 +146,11 @@ def enum_from_str_value(enum_type, value):
     try:
         return enum_type(value)
     except ValueError:
-        for enum in enum_type:
-            if str(enum.value) == value:
-                return enum
-        for enum in enum_type:
-            if enum.name == value:
-                return enum
+        for enum_value in enum_type:
+            if str(enum_value.value) == value:
+                return enum_value
+        for enum_value in enum_type:
+            if enum_value.name == value:
+                return enum_value
 
         raise ValueError('not a valid value for enumeration: %r' % value)

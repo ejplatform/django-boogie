@@ -1,11 +1,13 @@
 Django Rest Framework (WIP)
 ===========================
 
-Django Rest Framework (DRF) is very powerful and flexible, but unfortunately
-requires a lot of boilerplate. This is aggravated if we want to build a level
-3 REST API (link) with HATEAOS controls. This is how REST is supposed to work
-and we should really aim for this kind organization. Boogie makes it easy to
-create simple RESTful APIs.
+Django Rest Framework (DRF) is very powerful and flexible, but it also requires
+a lot of boilerplate to declare even simple APIs. This is aggravated if we
+want to build a trully RESTful API with HATEAOS controls (also known as a level
+3 API according to ?? maturity model). This is how REST is supposed to work
+and we should really aim for this kind organization, however DRF do not make it
+the easier route. In Boogie, creating a RESTful API is as simple as adding a
+few decorators.
 
 
 .. code-block:: python
@@ -41,8 +43,10 @@ Now on your project's urls.py, just add:
         path('api/', include(rest_api.urls)),
     ]
 
-This will create the following endpoints under "/api/v1/"
-
+Under the hood, Boogie creates the Serializer and ViewSet classes for each
+model using Django REST Framework  and configure a router that organizes every
+end-point declared. Boogie enforces API versioning, so you should point your
+browser to "/api/v1/" to see something like this:
 
     {
         "books": "https://my-site.com/api/v1/books/",
@@ -50,7 +54,9 @@ This will create the following endpoints under "/api/v1/"
         "publishers": "https://my-site.com/api/v1/publishers/"
     }
 
-If you go to one of those endpoints, you will get something like this:
+Each resource is then constructed automatically according to the information
+passed to the rest_api decorator. In our case, it exposes all fields of each
+model and stores foreign relations as hyperlinks under a "links" property:
 
     {
         "links": {

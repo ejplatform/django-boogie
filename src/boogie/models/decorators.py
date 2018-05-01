@@ -1,5 +1,7 @@
 from functools import wraps
 
+from .manager import QueryManager
+
 
 def manager_method(method):
     """
@@ -62,5 +64,4 @@ def manager_property(method=None, *, classproperty=False):
             else:
                 return self.fget(cls)
 
-    return ManagerProperty(lambda self: QueryManager(method(self))
-                           )
+    return ManagerProperty(lambda self: QueryManager(method(self)))

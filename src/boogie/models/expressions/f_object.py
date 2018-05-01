@@ -8,7 +8,7 @@ from .geo import GeoAttribute
 
 
 class FMeta(type(models.F)):
-    def __getattr__(cls, attr):
+    def __getattr__(cls, attr):  # noqa: N805
         return cls(attr)
 
 
