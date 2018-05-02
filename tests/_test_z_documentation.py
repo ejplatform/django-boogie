@@ -1,10 +1,10 @@
 import os
 
-import pytest
-import manuel.ignore
 import manuel.codeblock
 import manuel.doctest
+import manuel.ignore
 import manuel.testing
+import pytest
 
 pytestmark = pytest.mark.db
 
@@ -43,6 +43,7 @@ def make_manuel_suite(ns):
         test = pytest.mark.documentation(_wrapped(test.runTest, name))
         ns[name] = pytest.mark.django_db(test)
     return suite
+
 
 try:
     make_manuel_suite(globals())
