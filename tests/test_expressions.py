@@ -42,20 +42,20 @@ class TestReadOnlyQueries:
         )
 
     def test_string_operations(self, authors):
-        assert list(authors.values_list(F.name.upper(), flat=True)) == \
-               ['AUTHOR', 'YOUNG', 'OLD']
+        upper_names = list(authors.values_list(F.name.upper(), flat=True))
+        assert upper_names == ['AUTHOR', 'YOUNG', 'OLD']
 
-        assert list(authors.values_list(F.name.lower(), flat=True)) == \
-               ['author', 'young', 'old']
+        lower_names = list(authors.values_list(F.name.lower(), flat=True))
+        assert lower_names == ['author', 'young', 'old']
 
-        assert list(authors.values_list(F.name.length(), flat=True)) == \
-               [6, 5, 3]
+        lengths = list(authors.values_list(F.name.length(), flat=True))
+        assert lengths == [6, 5, 3]
 
     def test_string_filtering(self, authors):
         qs = authors.filter(F.name.equals('old', case=False))
         assert qs[0].name == 'Old'
 
-        qs = authors.filter(F.name.regex('^\w\w\w$'))
+        qs = authors.filter(F.name.regex(r'^\w\w\w$'))
         assert qs[0].name == 'Old'
 
         qs = authors.filter(F.name.startswith('Ol'))

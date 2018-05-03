@@ -216,4 +216,4 @@ class TestDjangoSettings:
         conf1 = DjangoConf(environment='production')
         conf2 = DjangoConf(environment='production')
         assert conf1.get_settings()['SECRET_KEY'] == \
-               conf2.get_settings()['SECRET_KEY']
+            conf2.get_settings()['SECRET_KEY']

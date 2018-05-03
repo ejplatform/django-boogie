@@ -6,7 +6,7 @@ from tests.testapp.models import User, Gender
 
 class TestBasicEnum:
     @pytest.fixture
-    def Gender(self):
+    def gender(self):
         class Gender(IntEnum):
             MALE = 'male'
             FEMALE = 'female'
@@ -15,20 +15,20 @@ class TestBasicEnum:
 
         return Gender
 
-    def test_creates_proper_enum(self, Gender):
-        assert [Gender.MALE, Gender.FEMALE, Gender.OTHER, Gender.NOT_GIVEN] == \
+    def test_creates_proper_enum(self, gender):
+        assert [gender.MALE, gender.FEMALE, gender.OTHER, gender.NOT_GIVEN] == \
                [0, 1, 2, 3]
 
-    def test_provides_item_descriptions(self, Gender):
-        assert Gender.MALE_DESCRIPTION == 'male'
-        assert Gender.MALE.get_description() == 'male'
-        assert Gender.get_description(Gender.MALE) == 'male'
-        assert Gender.get_description('MALE') == 'male'
+    def test_provides_item_descriptions(self, gender):
+        assert gender.MALE_DESCRIPTION == 'male'
+        assert gender.MALE.get_description() == 'male'
+        assert gender.get_description(gender.MALE) == 'male'
+        assert gender.get_description('MALE') == 'male'
 
 
 class TestExplicitlyOrderedEnum(TestBasicEnum):
     @pytest.fixture
-    def Gender(self):
+    def gender(self):
         class Gender(IntEnum):
             OTHER = 2, 'other'
             FEMALE = 1, 'female'
@@ -40,7 +40,7 @@ class TestExplicitlyOrderedEnum(TestBasicEnum):
 
 class TestTaggedIntEnum(TestBasicEnum):
     @pytest.fixture
-    def Gender(self):
+    def gender(self):
         class Gender(IntEnum):
             OTHER = TaggedInt(2, 'other')
             FEMALE = TaggedInt(1, 'female')
