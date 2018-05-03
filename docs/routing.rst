@@ -32,6 +32,7 @@ Django's approach also lacks testability: ...
 Django-boogie url router translates nice url template expressions to low-level
 regexes that Django understands.
 
+.. ignore-next-block
 .. code-block:: python
 
     from boogie import Router

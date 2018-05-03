@@ -116,10 +116,10 @@ class QuerySet(BulkUpdateQuerySet):
         df.index.name = 'pk'
         return df
 
-    def save_dataframe(self, dataframe, batch_size=None, in_bulk=True):
+    def update_dataframe(self, dataframe, batch_size=None, in_bulk=True):
         """
-        Persist data frame data to the database. Data frame index is treated
-        as primary key.
+        Persist data frame data to the database. Data frame index must
+        correspond to primary keys.
 
         Args:
             dataframe:

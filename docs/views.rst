@@ -22,19 +22,20 @@ uses a confusing API .
 Our approach
 ============
 
-Boogie tends to favor more functional approaches than what Django provides.
-While we like the function view contract, we recognize that classes are very
-good to compose isolated namespaces. We introduce a different approach to
-class-based views. We opt for simplicity:
+Boogie tends to favor more functional approaches than Django. While we like
+the function view contract, we recognize that classes are very good to compose
+isolated namespaces, specially in an object-oriented language like Python. That
+aid, we introduce a different approach to class-based views. It opts for
+simplicity:
 
 .. important::
 
      A view instance is a callable object that obeys Django's view function
     contract.
 
-We provide a base-class implementation with a few goodies. The first is that it
-understands the presence of separate get, post, delete, etc methods and may direct
-the flow to those methods:
+Boogie's base :cls:`boogie.View` class offers a few goodies. First, it
+understands the presence of separate get, post, delete, etc methods and
+redirect control flow to the appropriate handler when a request is made:
 
 .. code-block::
 
@@ -42,10 +43,12 @@ the flow to those methods:
 
     # on view.py
     class FormView(View):
+        # Only called when request.method == 'GET'
         def get(self, request):
             ctx = {'form': MyForm()}
             return render(request, 'my-template.html', ctx)
 
+        # Called when request.method == 'POST'
         def post(self, request):
             form = MyForm(request.POST)
             ctx = {'form': form}

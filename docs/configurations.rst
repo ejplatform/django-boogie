@@ -40,14 +40,15 @@ Getting started
         @env.property(type=float)
         def OTHER_VARIABLE(self, value):
             if value is None:
-                return self.get_value(self.env('ENV_VAR'))
+                return self.get_value(self.env('SOMEVAR', 0))
             else:
                 return value
 
         # Methods, lowercase variables, etc, can be used as normal, but they
         # will not be exported to the settings module.
-        def get_value(self):
-            pass
+        def get_value(self, index):
+            options = [1, 2, 3, 4]
+            return options[index]
 
     # Save settings in the default DJANGO_SETTINGS_MODULE module
     Conf.save_settings()

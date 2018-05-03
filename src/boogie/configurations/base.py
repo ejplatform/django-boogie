@@ -2,8 +2,9 @@ import os
 import sys
 from importlib import import_module
 
-import environ
 from django.core.exceptions import ImproperlyConfigured
+
+from .descriptors import Env
 
 
 def save_configuration(conf_class, where=None):
@@ -66,7 +67,7 @@ class Conf:
 
     def __init__(self, **kwargs):
         self._settings = None
-        self.env = environ.Env()
+        self.env = Env()
 
         cls = type(self)
         for attr, value in kwargs.items():

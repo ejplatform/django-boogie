@@ -9,13 +9,16 @@ and we should really aim for this kind organization, however DRF do not make it
 the easier route. In Boogie, creating a RESTful API is as simple as adding a
 few decorators.
 
-
+.. ignore-next-block
 .. code-block:: python
+
+    from django.db import models
+    from boogie.rest import rest_api
 
     @rest_api()
     class Book(models.Model):
-        author = models.ForeignKey('Author')
-        publisher = models.ForeingKey('Publisher')
+        author = models.ForeignKey('Author', on_delete=models.CASCADE)
+        publisher = models.ForeignKey('Publisher', on_delete=models.CASCADE)
         title = models.TextField()
 
         def __str__(self):

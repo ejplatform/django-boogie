@@ -1,3 +1,6 @@
+import environ
+
+
 def env(default, type=None, name=None, **kwargs):
     """
     Declare a value that can be overridden by environment variables.
@@ -154,6 +157,18 @@ class EnvProperty(EnvDescriptor):
     def get_value(self, conf):
         value = super().get_value(conf)
         return self.fget(conf, value)
+
+
+class Env(environ.Env):
+    def __call__(self, name, default=None, type=None, **kwargs):
+        if type is None and default is None:
+            type = str
+        elif type is None:
+            type = default.__class__
+
+        method_name = EnvDescriptor.METHOD_MAPPER[type]
+        method = getattr(self, method_name)
+        return method(name, default=default, **kwargs)
 
 
 env.property = env_property

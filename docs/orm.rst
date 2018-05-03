@@ -24,7 +24,6 @@ In order to illustrate fancy indexing in Boogie, let us start constructing a
 small group of elements. First the model:
 
 .. ignore-next-block
-
 .. code-block:: python
     # models.py
 
@@ -177,6 +176,7 @@ manager in the same module, the manager must be defined first and thus should si
 the topmost part of the file, which is the most convenient part to access. Boogie let us
 organize both classes in a more natural way:
 
+.. ignore-next-block
 .. code-block:: python
 
     from boogie import models
@@ -199,19 +199,19 @@ This arrangement prevents a few common Django anti-patterns:
 Implementing table logic as class methods of the model class:
     We should create predictable  interfaces and the "Django way" is to put
     table logic in managers and querysets. Not only that, but class methods
-    are not "chainable" like queryset methods and you would be limiting your
-    APIs.
+    cannot be called later in a chain like standard queryset methods, which
+    may hurt the usability of our APIs.
 Creating separate models.py and managers.py:
     Putting all models of an app in a file and all managers in another is a
     poor structure: User and UserManager are much more cohesive than, say,
     User and Group. We should split our modules by concerns and not by
-    implementation details such as a common class inheritance.
+    implementation details such as a common base class.
 Manager methods in the queryset:
     Creating separate managers and queryset classes involves a lot of
     boilerplate. The usual approach is to create a QuerySet subclass and
     call its ``.as_manager()`` method to create the corresponding
     Manager. This approach makes very easy to slip some methods that should
-    belong exclusively into the manager (e.g., object creation patterns) to
+    belong exclusively into the manager (e.g., object creation patterns) into
     the queryset. Doing so is not very problematic, but could allow spurious
     API usage such as ``Model.objects.filter(age__lt=18).create(name='John', age=42)``.
     In Boogie we can mark that a method exists only in the Manager by decorating
@@ -222,24 +222,29 @@ Manager methods in the queryset:
 Pandas integration
 ==================
 
-Sometimes SQL (or Django's ORM) is simply not powerful enough to perform some types of
-muti-row computations. Boogie query sets integrate with `Pandas <https://pandas.pydata.org>`,
-which is a great package to perform data manipulation in the Pydata stack. Compared to
-many hand-written solutions that iterates over a sequence of objects, Pandas data frames
-offer simpler APIs and are much more computationally efficient.
+Sometimes SQL (or Django's ORM) is simply not powerful enough to perform some
+advanced multi-row computations. Boogie query sets integrate with
+`Pandas <https://pandas.pydata.org>`, which is a great package to perform data
+manipulation in table-like structures. Compared to many hand-written solutions
+that iterates over a sequence of objects, Pandas data frames offer simpler APIs
+and can be much more computationally efficient.
 
-All Boogie query sets have a "to_dataframe()" and "save_dataframe()" functions.
+All Boogie query sets have a "to_dataframe()" and "update_dataframe()"
+functions. The first returns a dataframe from queryset data:
 
->>> users[:, ['name', 'age']].to_dataframe()
+>>> users[:, ['name', 'age']].to_dataframe()                # doctest: +ELLIPSIS
                name  age
-pk                      
+...
 0       John Lennon   27
 1    Paul McCartney   26
 2   George Harrison   22
 3        Ringo Star   29
 
+The second updates the database using data from a pandas dataframe. Dataframe
+indexes must correspond to primary keys.
+
 >>> df = users[:, 'age'].to_dataframe()
 >>> df['age'] += 1
->>> users.save_dataframe(df)
+>>> users.update_dataframe(df)
 >>> users[0, ['name', 'age']]
 Row('John Lennon', 28)

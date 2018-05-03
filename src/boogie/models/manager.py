@@ -11,7 +11,7 @@ class Manager(models.Manager):
     """
 
     # Delegates
-    save_dataframe = delegate_to('_queryset')
+    update_dataframe = delegate_to('_queryset')
     load_dataframe = delegate_to('_queryset')
     head = delegate_to('head')
     tail = delegate_to('tail')
