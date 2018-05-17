@@ -5,19 +5,14 @@
     :target: https://coveralls.io/github/fabiommendes/django-boogie?branch=master
 
 
-Django is nice and powerful, but sometimes it feels too serious. Django-boogie
-brings some cool ideas from other libraries and frameworks to Django in order to
-make development easier and more effective.
+Highlights:
 
-Django-boogie provides:
-
-* A improved F object that allows for more idiomatic query expressions.
-* A new url mapper that do not rely on regular expressions.
-* A unified manager/queryset class that exposes itself as a table data
-  structure with an API inspired in the PyData stack (numpy, pandas and friends).
-* A system of hooks that allows greater interoperability and extensibility
-  between different apps.
-
+* Easy creation of rest APIs with a simple decorator.
+* A Pandas inspired API for querysets + simple integration with Pandas.
+* A improved F object that allows more idiomatic query expressions.
+* Class-based settings.
+* Refactored class-based views.
+* And more!
 
 Installation instructions
 =========================

@@ -64,7 +64,12 @@ class BaseConf(Conf):
 
     # Database
     # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
-    DATABASES = env('sqlite:///db.sqlite3', type='db_url')
+    DATABASE_DEFAULT = env('sqlite:///local/db/db.sqlite3', type='db_url', name='DJANGO_DEFAULT_DB')
+    DATABASE_TEST = env('sqlite:///local/db/test.sqlite3', type='db_url', name='DJANGO_TEST_DB')
+    DATABASES = property(lambda self: {
+        'default': self.DATABASE_DEFAULT,
+        'test': self.DATABASE_TEST
+    })
 
     # Password validation
     # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -113,6 +118,12 @@ class BaseConf(Conf):
 
     #: Site admin url, if Django admin app is installed.
     ADMIN_URL = env('admin/')
+    SITE_ID = 1
+
+    #: Authentication
+    LOGIN_URL = env('login/')
+    LOGOUT_URL = env('logout/')
+    USER_MODEL = 'auth.User'
 
 
 class InstalledAppsConf(BaseConf):
@@ -242,30 +253,44 @@ class TemplatesConf(BaseConf):
     Configure templates.
     """
 
+    DJANGO_TEMPLATES_DIRS = ()
+    JINJA_TEMPLATES_DIRS = ()
+
+    def get_django_templates_dirs(self):
+        return list(self.DJANGO_TEMPLATES_DIRS)
+
+    def get_jinja_templates_dirs(self):
+        return list(self.JINJA_TEMPLATES_DIRS)
+
     @property
     def TEMPLATES(self):  # noqa: N802
-        return [self.DJANGO_TEMPLATES, self.JINJA_TEMPLATES]
+        templates = [self.DJANGO_TEMPLATES, self.JINJA_TEMPLATES]
+        return [x for x in templates if x]
 
-    DJANGO_TEMPLATES = {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    }
+    @property
+    def DJANGO_TEMPLATES(self):  # noqa: N802
+        return {
+            'BACKEND': 'django.template.backends.django.DjangoTemplates',
+            'DIRS': self.get_django_templates_dirs(),
+            'APP_DIRS': True,
+            'OPTIONS': {
+                'context_processors': [
+                    'django.template.context_processors.debug',
+                    'django.template.context_processors.request',
+                    'django.contrib.auth.context_processors.auth',
+                    'django.contrib.messages.context_processors.messages',
+                ],
+            },
+        }
 
-    JINJA_TEMPLATES = {
-        'BACKEND': 'django.template.backends.jinja2.Jinja2',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {}
-    }
+    @property
+    def JINJA_TEMPLATES(self):  # noqa: N802
+        return {
+            'BACKEND': 'django.template.backends.jinja2.Jinja2',
+            'DIRS': self.get_jinja_templates_dirs(),
+            'APP_DIRS': True,
+            'OPTIONS': {},
+        }
 
 
 class DjangoConf(MiddlewareConf,

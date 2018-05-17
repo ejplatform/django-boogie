@@ -44,6 +44,9 @@ class RestAPI:
         self.registries = {None: {}}
 
     def __call__(self, *args, **kwargs):
+        if args and isinstance(args[0], type):
+            return self(*args[1:], **kwargs)(args[0])
+
         def decorator(cls):
             self.register(cls, *args, **kwargs)
             return cls

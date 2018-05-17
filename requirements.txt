@@ -1,1 +1,4 @@
--e .
+-e .[dev]
+-e .[docs]
+-e .[configurations]
+-e .[rest]

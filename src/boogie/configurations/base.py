@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from importlib import import_module
@@ -5,6 +6,8 @@ from importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 
 from .descriptors import Env
+
+log = logging.getLogger('boogie')
 
 
 def save_configuration(conf_class, where=None):
@@ -46,8 +49,12 @@ def save_configuration(conf_class, where=None):
 
     # We create an instance of the class configuration and import all symbols
     # with upper case names.
-    conf = conf_class()
-    where.update(conf.get_settings())
+    try:
+        conf = conf_class()
+        where.update(conf.get_settings())
+    except Exception as exc:
+        log.error('Error loading configurations: %s' % exc)
+        raise
 
 
 class Conf:

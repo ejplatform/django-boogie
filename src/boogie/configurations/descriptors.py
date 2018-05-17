@@ -1,4 +1,8 @@
+from pathlib import Path
+
 import environ
+
+path_type = type(Path('path'))
 
 
 def env(default, type=None, name=None, **kwargs):
@@ -107,6 +111,7 @@ class EnvDescriptor:
         list: 'list',
         tuple: 'tuple',
         dict: 'dict',
+        path_type: 'str',
 
         # Special methods
         'json': 'json',

@@ -3,7 +3,8 @@ from functools import lru_cache, partial
 
 from django.db import models
 from django.db.models.query import ValuesListIterable
-from django_bulk_update.query import BulkUpdateQuerySet
+from manager_utils import ManagerUtilsQuerySet
+from django_pandas.managers import DataFrameQuerySet
 from lazyutils import lazy
 
 from .expressions import F
@@ -12,11 +13,11 @@ from ..types import linear_namespace
 F_EXPR_TYPE = type(F.age > 0)
 
 
-class QuerySet(BulkUpdateQuerySet):
+class QuerySet(ManagerUtilsQuerySet, DataFrameQuerySet):
     """
     Boogie's drop in replacement to Django's query sets.
 
-    It extends the query set with a Pydata-inspired interface to select data
+    It extends the query set API with a Pydata-inspired interface to select data
     """
 
     # Properties
