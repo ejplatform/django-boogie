@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models.query import ValuesListIterable
 from manager_utils import ManagerUtilsQuerySet
 from django_pandas.managers import DataFrameQuerySet
-from lazyutils import lazy
+from sidekick import lazy
 
 from .expressions import F
 from ..types import linear_namespace

@@ -4,7 +4,7 @@ from functools import lru_cache
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from lazyutils import lazy
+from sidekick import lazy
 
 NoneType = type(None)
 

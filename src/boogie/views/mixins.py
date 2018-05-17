@@ -1,6 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import render
-from lazyutils import lazy
+from sidekick import lazy
 from types import FunctionType
 
 

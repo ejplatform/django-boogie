@@ -1,4 +1,4 @@
-from lazyutils import lazy
+from sidekick import lazy
 
 
 class GeoAttribute:

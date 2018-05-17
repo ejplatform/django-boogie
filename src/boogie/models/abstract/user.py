@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _, ugettext as __
-from lazyutils import delegate_to, lazy
+from sidekick import delegate_to, lazy
 
 from ...functions import get_config
 

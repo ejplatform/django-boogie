@@ -2,7 +2,7 @@ import logging
 import operator
 
 from django.utils.functional import cached_property
-from lazyutils import delegate_to
+from sidekick import delegate_to
 from rest_framework import serializers
 from rest_framework import viewsets
 

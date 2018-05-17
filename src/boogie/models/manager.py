@@ -1,6 +1,6 @@
 from django.db import models
 from django.db.models.sql import Query
-from lazyutils import delegate_to
+from sidekick import delegate_to
 
 from .queryset import QuerySet
 
