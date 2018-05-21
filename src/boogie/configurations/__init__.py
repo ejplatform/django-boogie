@@ -1,4 +1,6 @@
-from .base import save_configuration, Conf
 from .descriptors import env, env_property
-from .django_conf import DjangoConf
-from .django_conf import InstalledAppsConf, MiddlewareConf, TemplatesConf
+from .base import Conf
+from .django_conf import (
+    DjangoConf, EnvironmentConf, InstalledAppsConf, MiddlewareConf, TemplatesConf,
+    SecurityConf, PathsConf, UrlsConf, ServicesConf, LoggingConf, locales,
+)

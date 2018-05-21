@@ -1,8 +1,12 @@
 import base64
+import importlib.util
 from hashlib import md5
 
 
 def secret_hash(data):
+    """
+    Create a secret hash from data.
+    """
     strings = []
     for key, value in sorted(data.items()):
         strings.append(key)
@@ -12,7 +16,16 @@ def secret_hash(data):
                 strings.append(str(data))
         except TypeError:
             pass
-    print(strings)
     data = ''.join(strings)
     hash_value = md5(data.encode('utf8')).digest()
     return base64.b85encode(hash_value).decode('ascii')
+
+
+def module_exists(mod, package=None):
+    spec = importlib.util.find_spec(mod, package=package)
+    return spec is not None
+
+
+def module_path(mod, package=None):
+    spec = importlib.util.find_spec(mod, package=package)
+    return spec.origin
