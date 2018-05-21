@@ -8,6 +8,8 @@ AUTH_PASSWORD_VALIDATORS = []
 
 INSTALLED_APPS = [
     'tests.testapp',
+    'boogie.apps.users',
+    # 'boogie.apps.tasks',
     'boogie',
     'rest_framework',
     'django.contrib.contenttypes',

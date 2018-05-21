@@ -164,12 +164,12 @@ class Profile(models.Model):
     )
 
     # Delegates and properties
-    username = delegate_to('user', readonly=True)
-    name = delegate_to('user', readonly=True)
-    first_name = delegate_to('user', readonly=True)
-    last_name = delegate_to('user', readonly=True)
-    alias = delegate_to('user', readonly=True)
-    email = delegate_to('user', readonly=True)
+    username = delegate_to('user', read_only=True)
+    name = delegate_to('user', read_only=True)
+    first_name = delegate_to('user', read_only=True)
+    last_name = delegate_to('user', read_only=True)
+    alias = delegate_to('user', read_only=True)
+    email = delegate_to('user', read_only=True)
 
     class Meta:
         abstract = True

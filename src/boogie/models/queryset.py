@@ -8,7 +8,7 @@ from django_pandas.managers import DataFrameQuerySet
 from sidekick import lazy
 
 from .expressions import F
-from ..types import linear_namespace
+from ..utils.linear_namespace import linear_namespace
 
 F_EXPR_TYPE = type(F.age > 0)
 
