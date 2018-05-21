@@ -7,16 +7,42 @@ Url routing and views
 
 Regex-based routing is flexible, powerful, and can express very sophisticated URL
 interfaces. It is also usually much more complicated than necessary. The arcane
-syntax is notoriously hard to debug and it is easy to introduce subtle bugs that
-can have security implications for your website.
+syntax of regular expressions is notoriously hard to debug and it is easy to
+introduce subtle bugs that can have security implications for your website.
 
 Django 1.11 recognized that regular expressions are an overkill for this task
-and introduced the `path` element. Boogie expands on this syntax and creates
-a router object that is responsible for defining the regular expressions of an
-application through decorators. Boogie exposes an unified framework for
-declaring view functions associated with specific routes. The API is inspired by
-Flask and Sinatra microframeworks and generally leads to less boilerplate and can
-simplify the view functions when compared with the standard Django way.
+and introduced the path_ element. Boogie expands on this syntax and creates
+a router object that is responsible for defining urlpatterns through decorators
+to view functions in a way that resembles other micro-frameworks such as Flask_.
+
+.. _path: https://docs.djangoproject.com/en/2.0/ref/urls/#path
+.. _Flask: http://flask.pocoo.org/
+
+
+Routers
+=======
+
+In a Boogie app, we can drop the separate views.py and urls.py and define a
+single routes.py module that takes care of both defining the view functions
+and associating them to urls.
+
+.. code-block:: python
+
+    from boogie.routes import Router
+
+    app = Router(base_name='polls')
+
+    @app.route()
+    def list(request):
+        return render(...)
+
+    @app.route('<pk>/')
+    def detail(request, pk):
+        return render(...)
+
+
+
+
 
 Boogie view functions
 =====================
