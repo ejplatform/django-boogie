@@ -148,7 +148,7 @@ class RestAPI:
             model:
                 The model name.
             version:
-                API version. If ommited, it will be included in all API
+                API version. If omitted, it will be included in all API
                 versions.
         """
         info = self.get_model_info(model, version)

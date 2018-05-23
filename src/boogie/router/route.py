@@ -1,7 +1,10 @@
 import functools
 import inspect
+import re
+from collections import defaultdict
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
 from django.urls import path
@@ -10,34 +13,59 @@ from django.views.decorators.clickjacking import xframe_options_exempt, xframe_o
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, requires_csrf_token, csrf_protect
 from django.views.decorators.gzip import gzip_page
 
-from boogie.render import render_response
+from .paths import register_model_converter
+from ..render import render_response
 
 
-class Route:
+class ModelLookupMixin:
+    """
+    Common initialization patterns for Route and Router.
+    """
+
+    def __init__(self, models, lookup_field, lookup_type):
+        # Normalize models
+        self.models = dict(models or ())
+
+        # Normalize lookup field to a dictionary
+        if isinstance(lookup_field, str):
+            self.lookup_field = defaultdict(lambda: lookup_field)
+        else:
+            self.lookup_field = defaultdict(lambda: 'pk')
+            self.lookup_field.update(lookup_field or ())
+
+        # Normalize lookup type to a dictionary
+        if isinstance(lookup_type, str):
+            self.lookup_type = defaultdict(lambda: lookup_type)
+        else:
+            self.lookup_type = defaultdict(lambda: 'str')
+            self.lookup_type.update(lookup_type or ())
+
+
+class Route(ModelLookupMixin):
     """
     A route is a combination of a Django view + some url pattern.
     """
 
     def __init__(self, path, func, name=None, method=None, template=None,
-                 login=False, perms=None, staff=False,
+                 login=False, perms=None, staff=False, object=None,
                  cache=None, gzip=False, xframe=None, csrf=None,
+                 models=None, lookup_field='pk', lookup_type=None,
                  decorators=()):
+        super().__init__(models, lookup_field, lookup_type)
         self.path = path
         self.function = func
-        self.name = name
+        self.name = normalize_name(name, func)
         self.method = method
         self.template = template
         self.login = login
         self.perms = perms
+        self.object = object
         self.staff = staff
         self.cache = cache
         self.gzip = gzip
         self.xframe = xframe
         self.csrf = csrf
         self.decorators = decorators
-
-        if name is None:
-            self.name = func.__name__.replace('_', '-')
 
     def view_function(self):
         """
@@ -50,6 +78,7 @@ class Route:
 
         @apply_decorators(**kwargs)
         def view_function(request, **kwargs):
+            self.prepare_arguments(request, kwargs)
             result = function(request, **kwargs)
             return self.prepare_response(result, request)
 
@@ -60,7 +89,8 @@ class Route:
         Returns a django.urls.path (or re_path) object that handles the given
         route.
         """
-        return path(self.path, self.view_function(), name=prefix + self.name)
+        path_ = self.compatible_path()
+        return path(path_, self.view_function(), name=prefix + self.name)
 
     def prepare_response(self, result, request):
         """
@@ -77,6 +107,39 @@ class Route:
 
         # Other types
         return render_response(result)
+
+    def prepare_arguments(self, request, args):
+        """
+        Transforms the dictionary of input arguments inplace.
+
+        This step transforms the view arguments before passing them to the view
+        function.
+        """
+
+    def compatible_path(self):
+        """
+        Convert a Boogie-style path specification to a valid Django path.
+        """
+        path = self.path
+
+        for name, model in self.models.items():
+            part = f'<model:{name}>'
+            if part in path:
+                lookup_field = self.lookup_field.get(name, 'pk')
+                lookup_type = self.lookup_type.get(name, 'str')
+                converter = get_converter(model, lookup_field, lookup_type)
+                path = path.replace(part, f'<{converter}:{name}>')
+
+        # Find unregistered models
+        if '<model:' in path:
+            m = re.search(r'<model:[^>]*>', path)
+            part = path[m.start():m.end()]
+            name = part[7:-1]
+            raise ImproperlyConfigured(
+                f'Could not find a model for {part}. Please pass the correct '
+                f'model for {name} in the models dictionary of the route.'
+            )
+        return path
 
 
 #
@@ -155,3 +218,21 @@ def staff_required(view):
         return view(request, **kwargs)
 
     return decorated
+
+
+def normalize_lookup(field, name=None):
+    if isinstance(field, str):
+        return field
+    return field.get(name)
+
+
+def normalize_name(name, function=None):
+    if name:
+        return name
+    return function.__name__.replace('_', '-')
+
+
+def get_converter(model, lookup_field, lookup_type):
+    name = f'boogie@{model}.{lookup_field}/{lookup_type}'
+    register_model_converter(model, name, lookup_field, lookup_type)
+    return name

@@ -1,13 +1,17 @@
-from collections import OrderedDict
+from collections import OrderedDict, Sequence
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponseBadRequest
 
 from sidekick import lazy
-from .route import Route
+from .route import Route, normalize_name, ModelLookupMixin
 
 
-class Router:
+# Django makes an instance check to see if urlpatterns is a list of path
+# declarations. We inherit from list, but implement all methods using
+# collections.Sequence. This is necessary since urls are only created after
+# initialization of the Router.urls attribute.
+class Router(ModelLookupMixin, Sequence, list):
     """
     A collection of routes.
 
@@ -24,10 +28,17 @@ class Router:
                 patterns.append(route.path_handler())
             else:
                 raise NotImplementedError
+        super().__setitem__(slice(None, None), patterns)
         return patterns
 
-    def __init__(self):
+    def __init__(self, base_name='', template=None,
+                 models=None, lookup_field=None, lookup_type=None, **kwargs):
+        list.__init__(self)
+        ModelLookupMixin.__init__(self, models, lookup_field, lookup_type)
         self.routes = []
+        self.base_name = base_name
+        self.template = template
+        self.extra_args = kwargs
 
     def __call__(self, *args, **kwargs):
         return self.route(*args, **kwargs)
@@ -41,33 +52,51 @@ class Router:
     def __getitem__(self, item):
         return self.urls[item]
 
-    def route(self, path='', **kwargs):
+    def route(self, path='', name=None, **kwargs):
         """
         Register a route from function. Users should provide a path and can
         provide any optional routing parameters.
         """
 
         def decorator(func):
-            self.register(func, path, **kwargs)
+            self.register(func, path, name, **kwargs)
             return func
 
         return decorator
 
-    def register(self, function, path='', **kwargs):
+    def register(self, function, path='', name=None, template=None, **kwargs):
         """
         Register a function as a route.
 
         Similar to the .route method, but does not behave as a decorator.
         """
+
+        # Use the last registered route if path is ellipsis
         if path is ... and not self.routes:
             msg = 'cannot determine last url from empty router'
             raise ImproperlyConfigured(msg)
         elif path is ...:
             path = self.routes[-1].path
 
+        # Check if should use the parent template or not
+        name = normalize_name(name, function)
+        if template is None and self.template is not None:
+            template = self.template.format(name=name)
+        kwargs['name'] = name
+        kwargs['template'] = template
+
+        # Check if it override any model and lookup fields
+        models = dict(kwargs.get('models') or ())
+        kwargs['models'] = dict(self.models, **models)
+        lookup_field = dict(kwargs.get('lookup_field') or ())
+        kwargs['lookup_field'] = dict(self.lookup_field, **lookup_field)
+
+        # Create a Route object
+        kwargs = dict(self.extra_args, **kwargs)
         route = Route(path, function, **kwargs)
         self.routes.append(route)
 
+        # Save route to the list of registered routes
         try:
             routes = getattr(function, 'routes', [])
             function.registered_routes = [*routes, route]
