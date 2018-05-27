@@ -1,6 +1,7 @@
 import pytest
 
-from boogie.types import linear_namespace, linear_namespace_cached
+from boogie.utils import linear_namespace
+from boogie.utils.linear_namespace import linear_namespace_cached
 
 
 class TestLinearNamespace:

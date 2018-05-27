@@ -1,90 +1,81 @@
 import enum
 
 
-class ConditionalDescriptor:
-    """
-    A descriptor that allows class and instance dispatch to different methods.
-
-    It receives a string name and dispatches to _<name> when accessed from
-    an instance and _cls_<name> when accessed from a class.
-    """
-
-    def __init__(self, attr):
-        self.attr = attr
-
-    def __get__(self, instance, cls=None):
-        if instance is None:
-            return getattr(cls, '_cls_' + self.attr)
-        else:
-            return getattr(instance, '_' + self.attr)
-
-
-class Namespace(enum._EnumDict):
+class _EnumDict(enum._EnumDict):
     """
     Namespace that automatically create value() instances for member entries.
     """
 
-    def __init__(self, data):
+    def __init__(self, dtype=object):
         super().__init__()
-        self.update(data)
-        self._last_values.extend(getattr(data, '_last_values', ()))
-        self._member_names.extend(getattr(data, '_member_names', ()))
-        self._auto_index = 0
-        self._enum_values = {}
+        self.dtype = dtype
+        self._descriptions = []
 
     def __setitem__(self, key, value):
-        if key.isupper():
-            if isinstance(value, str):
-                value = TaggedInt(self._auto_index, value)
-                self._auto_index += 1
-            elif isinstance(value, tuple):
-                value = TaggedInt(*value)
-            elif isinstance(value, TaggedInt):
-                self._auto_index = value + 1
-            elif isinstance(value, int):
-                value = TaggedInt(value, key.lower().replace('_', ' '))
-                self._auto_index = value + 1
-            # Proxy strings
-            elif value == str(value):
-                value = TaggedInt(self._auto_index, str(value))
-                self._auto_index += 1
-            else:
-                type_name = value.__class__.__name__
-                raise TypeError('unsupported enum value type: %s' % type_name)
-
-            self._enum_values[key] = value
-
+        if key == 'description':
+            raise ValueError('invalid enum name')
         super().__setitem__(key, value)
 
-    def __getattr__(self, item):
-        return getattr(self.data, item)
+        if self._member_names and self._member_names[-1] == key:
+            if not isinstance(value, tuple):
+                if isinstance(value, self.dtype):
+                    value = (value, key)
+                elif isinstance(value, str):
+                    value = (None, value)
+                else:
+                    value = (value, key)
+
+            value, description = value
+            self._last_values[-1] = value
+            self._descriptions.append(description)
+            dict.__setitem__(self, key, value)
 
 
-class DescriptionEnumMeta(enum.EnumMeta):
-    """
-    Metaclass for DescriptionMenu.
-    """
+class EnumMeta(enum.EnumMeta):
+    dtype = object
 
     @classmethod
     def __prepare__(meta, cls, bases):  # noqa: N804
-        namespace = super().__prepare__(cls, bases)
-        return Namespace(namespace)
+        enum_dict = _EnumDict(meta.dtype)
+        member_type, first_enum = meta._get_mixins_(bases)
+        if first_enum is not None:
+            enum_dict['_generate_next_value_'] = getattr(first_enum, '_generate_next_value_', None)
+        return enum_dict
+
+    def __new__(meta, name, bases, namespace):  # noqa: N804
+        values = namespace._last_values
+        names = namespace._member_names
+
+        # Update
+        if meta.dtype is int:
+            for idx, (key, value) in enumerate(zip(names, values)):
+                values[idx] = value = idx if value is None else value
+                dict.__setitem__(namespace, key, value)
+            namespace._last_values = values
+
+        new = super().__new__(meta, name, bases, namespace)
+        return new
 
     def __init__(cls, name, bases, namespace):  # noqa: N805
         super().__init__(name, bases, namespace)
 
-        # Handle enum values and store metadata
-        enum_values = namespace._enum_values
-        cls._descriptions = \
-            {k: v.description for k, v in enum_values.items()}
-        cls._descriptions.update(
-            {i: i.description for i in enum_values.values()}
-        )
+        # Save descriptions
+        names = namespace._member_names
+        descriptions = namespace._descriptions
+        values = namespace._last_values
 
-        for k, v in enum_values.items():
-            setattr(cls, k + '_DESCRIPTION', v.description)
+        cls._descriptions = dict(zip(names, descriptions))
+        cls._values = dict(zip(names, values))
+        for attr, descr in zip(names, descriptions):
+            setattr(cls, attr + '_DESCRIPTION', descr)
+            case = getattr(cls, attr)
+            case.description = descr
+            cls._descriptions[case] = descr
 
-    def _cls_get_description(cls, value):  # noqa: N805
+    def __hash__(cls):  # noqa: N805
+        return id(cls)
+
+    def get_description(cls, value):  # noqa: N805
         """
         Get description from value.
         """
@@ -94,7 +85,8 @@ class DescriptionEnumMeta(enum.EnumMeta):
             raise ValueError('not a member of enumeration: %r' % value)
 
 
-class IntEnum(enum.IntEnum, metaclass=DescriptionEnumMeta):
+class IntEnum(enum.IntEnum,
+              metaclass=type('IntEnumMeta', (EnumMeta,), {'dtype': int})):
     """
     A subclass of enum.IntEnum that accepts an optional human-friendly
     description field during declaration.
@@ -105,44 +97,19 @@ class IntEnum(enum.IntEnum, metaclass=DescriptionEnumMeta):
         >>> class Roles(IntEnum):
         ...     TEACHER = 0, 'teacher'
         ...     STUDENT = 1, 'student'
-
     """
 
-    get_description = ConditionalDescriptor('get_description')
 
-    def _get_description(self):
-        """
-        Return description string for value member.
-        """
-        return self.__class__._descriptions[int(self)]
-
-
-class Enum(enum.Enum, metaclass=DescriptionEnumMeta):
+class Enum(enum.Enum, metaclass=EnumMeta):
     """
     Similar to :cls:`boogie.IntEnum`, but accepts any type of value.
     """
 
-    get_description = ConditionalDescriptor('get_description')
+    def __hash__(self):
+        return hash(self.value)
 
-    def _get_description(self):
-        """
-        Return description string for value member.
-        """
-        return self.__class__._descriptions[int(self)]
-
-
-class TaggedInt(int):
-    """
-    A tagged integer.
-    """
-
-    def __new__(cls, value=0, description=''):
-        self = super().__new__(cls, value)
-        self.description = description
-        return self
-
-    def __repr__(self):
-        name = self.__class__.__name__
-        return '%s(%s, %r)' % (name, super().__repr__(), self.description)
-
-    __str__ = __repr__
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return other is self
+        else:
+            return self.value.__eq__(other)

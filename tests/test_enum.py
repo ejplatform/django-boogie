@@ -1,6 +1,6 @@
 import pytest
 
-from boogie.fields.enum_type import IntEnum, TaggedInt
+from boogie.fields.enum_type import IntEnum, Enum
 from tests.testapp.models import User, Gender
 
 
@@ -21,7 +21,7 @@ class TestBasicEnum:
 
     def test_provides_item_descriptions(self, gender):
         assert gender.MALE_DESCRIPTION == 'male'
-        assert gender.MALE.get_description() == 'male'
+        assert gender.MALE.description == 'male'
         assert gender.get_description(gender.MALE) == 'male'
         assert gender.get_description('MALE') == 'male'
 
@@ -34,18 +34,6 @@ class TestExplicitlyOrderedEnum(TestBasicEnum):
             FEMALE = 1, 'female'
             NOT_GIVEN = 3, 'not given'
             MALE = 0, 'male'
-
-        return Gender
-
-
-class TestTaggedIntEnum(TestBasicEnum):
-    @pytest.fixture
-    def gender(self):
-        class Gender(IntEnum):
-            OTHER = TaggedInt(2, 'other')
-            FEMALE = TaggedInt(1, 'female')
-            NOT_GIVEN = TaggedInt(3, 'not given')
-            MALE = TaggedInt(0, 'male')
 
         return Gender
 
@@ -73,3 +61,20 @@ class TestEnumField:
         assert new.gender is not None
         assert isinstance(new.gender, Gender)
         assert new.gender == Gender.FEMALE
+
+
+class TestNonIntEnumField:
+    def test_make_non_numeric_enum_field(self):
+        class Gender(Enum):
+            MALE = 'male', 'male'
+            FEMALE = 'female', 'female'
+            OTHER = 'other', 'other'
+            NOT_GIVEN = 'not-given', 'not given'
+
+        assert Gender.MALE == 'male'
+        assert Gender.MALE_DESCRIPTION == 'male'
+        assert Gender.NOT_GIVEN == 'not-given'
+        assert Gender.NOT_GIVEN_DESCRIPTION == 'not given'
+        assert Gender.NOT_GIVEN.description == 'not given'
+        assert Gender.get_description('NOT_GIVEN') == 'not given'
+        assert Gender.get_description(Gender.NOT_GIVEN) == 'not given'
