@@ -67,8 +67,10 @@ class EnumField(models.Field):
         value = self._internal_field_class.to_python(self, value)
         return value_to_enum(self.enum, value)
 
-    def get_db_prep_value(self, *args, **kwargs):
-        return self._internal_field_class.get_db_prep_value(self, *args, **kwargs)
+    def get_db_prep_value(self, value, connection, prepared=False):
+        value = getattr(value, 'value', value)
+        prep_value = self._internal_field_class.get_db_prep_value
+        return prep_value(self, value, connection, prepared=prepared)
 
     def contribute_to_class(self, cls, name, *args, **kwargs):
         super().contribute_to_class(cls, name, *args, **kwargs)
