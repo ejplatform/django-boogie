@@ -13,8 +13,19 @@ from django.views.decorators.clickjacking import xframe_options_exempt, xframe_o
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, requires_csrf_token, csrf_protect
 from django.views.decorators.gzip import gzip_page
 
-from .paths import register_model_converter
+from .paths import register_model_converter, get_lookup_type
 from ..render import render_response
+
+
+class Cte:
+    def __init__(self, cte):
+        self.value = cte
+
+    def __call__(self, *args, **kwargs):
+        return self.value
+
+    def __repr__(self):
+        return 'Cte(%r)' % self.value
 
 
 class ModelLookupMixin:
@@ -25,20 +36,14 @@ class ModelLookupMixin:
     def __init__(self, models, lookup_field, lookup_type):
         # Normalize models
         self.models = dict(models or ())
-
-        # Normalize lookup field to a dictionary
-        if isinstance(lookup_field, str):
-            self.lookup_field = defaultdict(lambda: lookup_field)
+        if isinstance(lookup_field, defaultdict):
+            self.lookup_field = lookup_field.copy()
         else:
-            self.lookup_field = defaultdict(lambda: 'pk')
-            self.lookup_field.update(lookup_field or ())
-
-        # Normalize lookup type to a dictionary
-        if isinstance(lookup_type, str):
-            self.lookup_type = defaultdict(lambda: lookup_type)
+            self.lookup_field = to_default_dict(lookup_field or {}, 'pk')
+        if isinstance(lookup_type, defaultdict):
+            self.lookup_type = lookup_type.copy()
         else:
-            self.lookup_type = defaultdict(lambda: 'str')
-            self.lookup_type.update(lookup_type or ())
+            self.lookup_type = to_default_dict(lookup_type or {}, 'str')
 
 
 class Route(ModelLookupMixin):
@@ -125,8 +130,10 @@ class Route(ModelLookupMixin):
         for name, model in self.models.items():
             part = f'<model:{name}>'
             if part in path:
-                lookup_field = self.lookup_field.get(name, 'pk')
-                lookup_type = self.lookup_type.get(name, 'str')
+                lookup_field = self.lookup_field[name]
+                lookup_type = self.lookup_type[name]
+                if lookup_type is None:
+                    lookup_type = get_lookup_type(None, model, lookup_field)
                 converter = get_converter(model, lookup_field, lookup_type)
                 path = path.replace(part, f'<{converter}:{name}>')
 
@@ -232,7 +239,22 @@ def normalize_name(name, function=None):
     return function.__name__.replace('_', '-')
 
 
+def to_default_dict(value, default=None):
+    if isinstance(value, defaultdict):
+        return value.copy()
+    elif isinstance(value, dict):
+        if default is not None:
+            data = defaultdict(Cte(default))
+            data.update(value)
+            return data
+        else:
+            return dict(value)
+    else:
+        return defaultdict(Cte(value))
+
+
+@functools.lru_cache(maxsize=256)
 def get_converter(model, lookup_field, lookup_type):
-    name = f'boogie@{model}.{lookup_field}/{lookup_type}'
+    name = f'${model.__name__}.{lookup_field}-{lookup_type}'
     register_model_converter(model, name, lookup_field, lookup_type)
     return name

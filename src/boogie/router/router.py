@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponseBadRequest
 
 from sidekick import lazy
-from .route import Route, normalize_name, ModelLookupMixin
+from .route import Route, normalize_name, ModelLookupMixin, to_default_dict
 
 
 # Django makes an instance check to see if urlpatterns is a list of path
@@ -85,11 +85,11 @@ class Router(ModelLookupMixin, Sequence, list):
         kwargs['name'] = name
         kwargs['template'] = template
 
-        # Check if it override any model and lookup fields
+        # Check if it override any model and lookup fields and types
         models = dict(kwargs.get('models') or ())
         kwargs['models'] = dict(self.models, **models)
-        lookup_field = dict(kwargs.get('lookup_field') or ())
-        kwargs['lookup_field'] = dict(self.lookup_field, **lookup_field)
+        update_lookup(self, kwargs, 'lookup_field')
+        update_lookup(self, kwargs, 'lookup_type')
 
         # Create a Route object
         kwargs = dict(self.extra_args, **kwargs)
@@ -102,6 +102,8 @@ class Router(ModelLookupMixin, Sequence, list):
             function.registered_routes = [*routes, route]
         except AttributeError:
             pass
+
+        return route
 
     #
     # HTTP methods
@@ -167,6 +169,18 @@ def group_by_url(routes):
         paths = dic.setdefault(route.path, [])
         paths.append(route)
     return dic
+
+
+def update_lookup(router, kwargs, field):
+    original = getattr(router, field)
+    new = kwargs.get(field, {})
+    if isinstance(new, str):
+        lookup = to_default_dict(new)
+        lookup.update(original)
+    else:
+        lookup = original.copy()
+        lookup.update(new)
+    kwargs[field] = lookup
 
 
 def multi_method_view(method_map):

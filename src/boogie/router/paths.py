@@ -1,7 +1,11 @@
+import logging
+
 from django.db.models import fields
 from django.shortcuts import get_object_or_404
 from django.urls import register_converter
 from django.urls.converters import get_converter
+
+log = logging.getLogger('boogie')
 
 FIELD_TYPES_MAP = {
     # Numeric
@@ -29,6 +33,7 @@ class ModelConverterBase:
     model = None
     regex = None
     base_converter = None
+    raw_converter = None
     lookup_field = 'pk'
 
     def to_python(self, path):
@@ -59,22 +64,24 @@ def register_model_converter(model, type_name, lookup_field='pk', lookup_type=No
             things like slugs, but usually can be derived from the lookup_field.
     """
     class_name = f'{model.__name__}Converter'
-    base_converter = get_lookup_type(lookup_type, model, lookup_field)
+    raw_converter = get_lookup_type(lookup_type, model, lookup_field)
+    base_converter = get_converter(raw_converter)
     converter = type(class_name, (ModelConverterBase,), {
         'model': model,
         'lookup_field': lookup_field,
+        'raw_converter': raw_converter,
         'base_converter': base_converter,
-        'regex': get_converter(base_converter).regex,
+        'regex': base_converter.regex,
     })
     register_converter(converter, type_name)
 
 
-def get_lookup_type(type, model, field_name):
+def get_lookup_type(kind, model, field_name):
+    if kind is not None:
+        return kind
+
     if field_name == 'pk':
         field = model._meta.pk
     else:
         field = model._meta.get_field(field_name)
-
-    if type is not None:
-        return type
     return FIELD_TYPES_MAP.get(type(field), 'str')
