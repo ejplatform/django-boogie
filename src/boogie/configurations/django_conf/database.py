@@ -24,9 +24,9 @@ class DatabaseConf(EnvironmentConf):
     })
 
     # Derived inspections
-    USING_SQLITE = property(this.is_using_db('sqlite'))
-    USING_POSTGRESQL = property(this.is_using_db('postgresql'))
-    USING_MYSQL = property(this.is_using_db('mysql'))
+    USING_SQLITE = lazy(this.is_using_db('sqlite'))
+    USING_POSTGRESQL = lazy(this.is_using_db('postgresql'))
+    USING_MYSQL = lazy(this.is_using_db('mysql'))
 
     def is_using_db(self, db, which='default'):
         return db in self.DATABASES[which]['ENGINE']

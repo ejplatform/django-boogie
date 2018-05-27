@@ -1,5 +1,5 @@
-from . import django_conf
-from .django_conf import DjangoConf
+from boogie.configurations import django_conf
+from boogie.configurations.django_conf import DjangoConf
 
 
 class LoggingConf(django_conf.LoggingConf):

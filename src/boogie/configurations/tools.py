@@ -11,6 +11,10 @@ def secret_hash(data):
     for key, value in sorted(data.items()):
         strings.append(key)
         try:
+            if isinstance(value, dict):
+                value = sorted(value.items())
+            if isinstance(value, list):
+                value = tuple(value)
             data = hash(value)
             if data != -1:
                 strings.append(str(data))
