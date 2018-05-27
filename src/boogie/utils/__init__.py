@@ -1,0 +1,1 @@
+from .linear_namespace import linear_namespace, linear_namespace_from_sequence

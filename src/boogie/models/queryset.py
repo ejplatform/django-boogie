@@ -1,12 +1,13 @@
 import collections
 from functools import lru_cache, partial
 
+from bulk_update.helper import bulk_update
 from django.db import models
 from django.db.models.query import ValuesListIterable
-from manager_utils import ManagerUtilsQuerySet
 from django_pandas.managers import DataFrameQuerySet
-from sidekick import lazy
+from manager_utils import ManagerUtilsQuerySet
 
+from sidekick import lazy, itertools
 from .expressions import F
 from ..utils.linear_namespace import linear_namespace
 
@@ -71,6 +72,26 @@ class QuerySet(ManagerUtilsQuerySet, DataFrameQuerySet):
         return self.filter(pk=pk).update(**kwargs)
 
     update_item.alters_data = True
+
+    def bulk_update(self, objects, fields=None, exclude=None, batch_size=None,
+                    using='default', pk_field='pk'):
+        """
+        Update all objects in the given list. Optionally, a list of fields to
+        be updated can also be passed.
+
+        Args:
+            objects (sequence):
+                List of model instances.
+            fields:
+                Optional lists of names to be found.
+            batch_size (int):
+                Maximum size of each batch sent for update.
+        """
+        bulk_update(objects, meta=self.model._meta,
+                    update_fields=fields, exclude_fields=exclude,
+                    using=using, batch_size=batch_size, pk_field=pk_field)
+
+    bulk_update.alters_data = True
 
     #
     # Enhanced API
@@ -143,7 +164,7 @@ class QuerySet(ManagerUtilsQuerySet, DataFrameQuerySet):
 
         if in_bulk:
             self.bulk_update(objects,
-                             update_fields=fields,
+                             fields=list(fields),
                              batch_size=batch_size)
         else:
             for obj in objects:
@@ -388,3 +409,11 @@ def as_col_name(obj):
         print(obj, obj.__dict__)
         raise ValueError('invalid column object: %s' % obj)
     return obj.name
+
+
+def split_batch(seq, size, batches):
+    start = 0
+    it = iter(seq)
+    for _ in range(batches):
+        yield from itertools.islice(it, start, start + size)
+        start += size
