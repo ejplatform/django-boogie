@@ -32,5 +32,30 @@ def natural_base_url(model):
     * Uses a plural form.
     * Convert CamelCase to dash-case.
     """
-    name = model._meta.verbose_name_plural or model._meta.model_name
+    name = dash_case(model.__name__ + 's')
     return humanize_name(name).replace(' ', '-')
+
+
+def dash_case(name):
+    """
+    Convert a camel case string to dash case.
+
+    Example:
+        >>> dash_case('SomeName')
+        'some-name'
+    """
+
+    letters = []
+    for c in name:
+        if c.isupper() and letters and letters[-1] != '-':
+            letters.append('-' + c.lower())
+        else:
+            letters.append(c.lower())
+    return ''.join(letters)
+
+
+def snake_case(name):
+    """
+    Convert camel case to snake case.
+    """
+    return dash_case(name).replace('-', '_')

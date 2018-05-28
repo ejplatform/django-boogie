@@ -17,7 +17,7 @@ class EnvironmentConf(Conf):
     @env_property(type=bool)
     def DEBUG(self, value):  # noqa: N802
         if value is None:
-            return self.ENVIRONMENT in ('test', 'local')
+            return self.ENVIRONMENT == 'local'
         return value
 
     @env_property

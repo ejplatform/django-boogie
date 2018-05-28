@@ -28,6 +28,11 @@ class EnumField(models.Field):
             raise ImproperlyConfigured(
                 'First argument must be a enum.Enum subclass.'
             )
+        if not list(enum):
+            raise ImproperlyConfigured(
+                f'Must be a concrete enumeration. The provided class '
+                f'{enum.__qualname__} is empty.'
+            )
         if 'choices' in kwargs:
             raise ImproperlyConfigured(
                 'Cannot set the choices of an enum field.'
@@ -43,9 +48,9 @@ class EnumField(models.Field):
 
         self.enum = enum
         if is_integer_enum(enum):
-            self._internal_field_class = models.SmallIntegerField
+            self._impl = models.SmallIntegerField
         else:
-            self._internal_field_class = models.CharField
+            self._impl = models.CharField
         kwargs['choices'] = get_choices_from_enum(enum)
         super().__init__(*args, **kwargs)
 
@@ -56,27 +61,54 @@ class EnumField(models.Field):
         return name, path, args, kwargs
 
     def get_internal_type(self):
-        return self._internal_field_class.get_internal_type(self)
-
-    def from_db_value(self, value, expression, connection, context):
-        return self.to_python(value)
+        return self._impl.get_internal_type(self)
 
     def to_python(self, value):
         if not isinstance(value, self.enum):
             value = value_to_enum(self.enum, value)
-        value = self._internal_field_class.to_python(self, value)
+        value = self._impl.to_python(self, value)
         return value_to_enum(self.enum, value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
         value = getattr(value, 'value', value)
-        prep_value = self._internal_field_class.get_db_prep_value
+        prep_value = self._impl.get_db_prep_value
         return prep_value(self, value, connection, prepared=prepared)
 
     def contribute_to_class(self, cls, name, *args, **kwargs):
         super().contribute_to_class(cls, name, *args, **kwargs)
+
+        # Add options
         prefix = name.upper() + '_'
         for option in self.enum:
             setattr(cls, prefix + option.name, option)
+
+        # Create descriptor that wraps field access. The descriptor guarantees
+        # that the object is always converted to Enum types
+        setattr(cls, name, EnumDescriptor(self.enum, name))
+
+
+class EnumDescriptor:
+    def __init__(self, enum, name):
+        self.enum = enum
+        self.name = name
+
+    def __get__(self, instance, cls=None):
+        if instance is None:
+            return self
+
+        value = instance.__dict__.get(self.name)
+        enum = self.enum
+        if isinstance(value, (enum, NoneType)):
+            return value
+        value = value_to_enum(enum, value)
+        instance.__dict__[self.name] = value
+        return value
+
+    def __set__(self, instance, value):
+        enum = self.enum
+        if not isinstance(value, (enum, NoneType)):
+            value = value_to_enum(enum, value)
+        instance.__dict__[self.name] = value
 
 
 def get_choices_from_enum(enum):
@@ -99,25 +131,48 @@ def get_choices_from_enum(enum):
         return tuple((e.value, human(e.name)) for e in enum)
 
 
-@lru_cache(2048)
+@lru_cache(2048)  # noqa C901
 def value_to_enum(enum_type, value):
     """
     Create Enum instance from a string value. This will scan the list of
     enumerations if string is not found.
     """
-    if value is None:
-        return None
+
+    # Special case valid values
+    if isinstance(value, (enum_type, NoneType)):
+        return value
+
+    # Simple transformation to enum
     try:
         return enum_type(value)
     except ValueError:
-        for enum_value in enum_type:
-            if str(enum_value.value) == value:
-                return enum_value
-        for enum_value in enum_type:
-            if enum_value.name == value:
-                return enum_value
+        pass
 
-        raise ValueError('not a valid value for enumeration: %r' % value)
+    # Some types do not
+    for obj in enum_type:
+        if obj.value == value:
+            return obj
+
+    # Maybe we provided the enum name
+    if isinstance(value, str):
+        try:
+            value = getattr(enum_type, value)
+            if isinstance(value, enum_type):
+                return value
+            raise TypeError
+        except (AttributeError, TypeError):
+            pass
+
+    # Check if value can be coerced to string
+    try:
+        return enum_type(str(value))
+    except ValueError:
+        pass
+
+    print(enum_type, list(enum_type))
+
+    # Give up!
+    raise ValueError('not a valid value for enumeration: %r' % value)
 
 
 @lru_cache(256)

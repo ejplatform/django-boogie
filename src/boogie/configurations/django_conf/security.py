@@ -44,4 +44,22 @@ class SecurityConf(EnvironmentConf):
         },
     ]
 
+    @property
+    def PASSWORD_HASHERS(self):  # noqa: N802
+        if self.ENVIRONMENT == 'testing':
+            return (
+                'django.contrib.auth.hashers.MD5PasswordHasher',
+            )
+        else:
+            return self.get_password_hashers()
+
     ALLOWED_HOSTS = env([])
+
+    def get_password_hashers(self):
+        return [
+            'django.contrib.auth.hashers.Argon2PasswordHasher',
+            'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+            'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+            'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+            'django.contrib.auth.hashers.BCryptPasswordHasher',
+        ]

@@ -3,7 +3,7 @@ from .value import value
 
 class ValueMap(dict):
     def compute(self, name, *args, **kwargs):
-        return name in self and self[name].test(*args, **kwargs)
+        return name in self and self[name].compute(*args, **kwargs)
 
     def value_exists(self, name):
         return name in self
@@ -25,8 +25,17 @@ class ValueMap(dict):
 default_value_map = ValueMap()
 
 
-def add_value(name, pred):
-    default_value_map.add_value(name, pred)
+def add_value(name, func):
+    default_value_map.add_value(name, func)
+
+
+def register_value(name, **kwargs):
+    def decorator(func):
+        vfunc = value(**kwargs)(func)
+        default_value_map.add_value(name, vfunc)
+        return vfunc
+
+    return decorator
 
 
 def remove_value(name):
