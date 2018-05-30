@@ -14,13 +14,8 @@ class DatabaseConf(EnvironmentConf):
                            type='db_url',
                            name='DJANGO_DB_URL')
 
-    DATABASE_TEST = env('sqlite:///local/db/test.sqlite3',
-                        type='db_url',
-                        name='DJANGO_TEST_DB_URL')
-
     DATABASES = lazy(lambda self: {
-        'default': self.DATABASE_DEFAULT,
-        'test': self.DATABASE_TEST,
+        'default': dict(TEST={}, **self.DATABASE_DEFAULT),
     })
 
     # Derived inspections

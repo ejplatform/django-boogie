@@ -23,6 +23,7 @@ class ValueMap(dict):
 
 # Shared rule set
 default_value_map = ValueMap()
+NOT_GIVEN = object()
 
 
 def add_value(name, func):
@@ -48,3 +49,12 @@ def value_exists(name):
 
 def compute(name, *args, **kwargs):
     return default_value_map.compute(name, *args, **kwargs)
+
+
+def get_value(name, default=NOT_GIVEN):
+    try:
+        return default_value_map[name]
+    except KeyError:
+        if default is NOT_GIVEN:
+            raise ValueError('could not find value: %s' % name)
+        return default

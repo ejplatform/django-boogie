@@ -22,7 +22,7 @@ class AbstractUser(auth.AbstractUser):
     name = models.CharField(
         _('Name'),
         max_length=255,
-        default=_('*Anonymous user*'),
+        default='',
         help_text=_('User\'s full name'),
     )
 
@@ -43,6 +43,11 @@ class AbstractUser(auth.AbstractUser):
 
     class Meta:
         abstract = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.name:
+            self.name = self.username
 
 
 class User(AbstractUser):
