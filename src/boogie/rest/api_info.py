@@ -6,6 +6,9 @@ from django.utils.functional import cached_property
 class ApiInfo(Mapping):
     """
     Stores information about all resources of an specific API version.
+
+    It stores the API version in an attribute and behaves as a mapping from
+    resource to their respective options.
     """
 
     @cached_property

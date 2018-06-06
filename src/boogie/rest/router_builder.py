@@ -18,6 +18,7 @@ class RouterBuilder:
     """
     Builds the router object for the given API and resource.
     """
+
     # Delegate to API
     version = delegate_to('api')
 

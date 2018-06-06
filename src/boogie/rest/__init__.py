@@ -10,5 +10,8 @@ except ImportError:
     )
 
 from .base import RestAPI
+from .utils import to_json_default
+from . import utils as _utils
 
 rest_api = RestAPI()
+_utils.patch_rest_framework_json_encoder()
