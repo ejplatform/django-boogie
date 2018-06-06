@@ -1,3 +1,7 @@
+from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+
 from .paths import PathsConf
 
 
@@ -17,23 +21,27 @@ class LoggingConf(PathsConf):
         'propagate': True,
     }
 
-    @property
-    def LOGGING_CONSOLE_HANDLER(self):  # noqa: N802
+    def get_logging_console_handler(self):
         return {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
         }
 
-    @property
-    def LOGGING_FILE_HANDLER(self):  # noqa: N802
+    def get_logging_file_handler(self):
+        path = Path(self.LOG_FILE_PATH)
+        if path.is_dir():
+            raise ImproperlyConfigured(
+                'log file is a directory. Please set a correct LOG_FILE_PATH '
+                'in your configuration file that points to a log file, instead '
+                'of a directory.'
+            )
         return {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': self.LOG_FILE_PATH,
+            'filename': path,
         }
 
-    @property
-    def LOGGING(self):  # noqa: N802
+    def get_logging(self):  # noqa: N802
         return {
             'version': 1,
             'disable_existing_loggers': False,

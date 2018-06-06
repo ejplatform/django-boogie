@@ -3,6 +3,9 @@ from ..descriptors import env_property
 
 
 class LocaleConf(PathsConf):
+    """
+    Base Django locale configuration.
+    """
     USE_I18N = True
     USE_L10N = True
     USE_TZ = True
@@ -17,13 +20,25 @@ class LocaleConf(PathsConf):
         return value
 
 
+class NoLocalConf(PathsConf):
+    """
+    Base configuration for instances that do not use localization.
+    """
+    USE_I18N = False
+    USE_L10N = False
+    USE_TZ = False
+    LOCALE_NAME = None
+    LANGUAGE_CODE = None
+    TIME_ZONE = None
+
+
 def country(country, locale_name, language_code, timezone, **kwargs):
     """
     Return a function that creates a LocaleConf subclass specialized for a
     given country.
 
     This function return a factory rather than the Conf subclass itself to avoid
-    the overhead of class creation for a big list of countries.
+    the class creation overhead of a big list of countries.
     """
     ns = {
         'LOCALE_NAME': locale_name,

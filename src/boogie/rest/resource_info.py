@@ -26,7 +26,8 @@ class ResourceInfo:
         # Field info
         self.fields = list(fields or fields_from_model(model))
         for field in exclude:
-            self.fields.remove(field)
+            if field in self.fields:
+                self.fields.remove(field)
         self.used_fields = {f for f in self.fields}
 
         # Url info

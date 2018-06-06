@@ -9,7 +9,6 @@ class InstalledAppsConf(EnvironmentConf):
     Mixin class that helps managing INSTALLED_APPS.
     """
 
-    INSTALLED_APPS = property(lambda self: self.get_installed_apps())  # noqa: N802
     USE_DJANGO_USERS = True
     USE_DJANGO_ADMIN = True
     THIRD_PARTY_APPS = []
@@ -113,7 +112,6 @@ class InstalledAppsConf(EnvironmentConf):
                 app, *deps = app
             else:
                 app = deps = app
-
             if all(is_installed(dep) for dep in deps):
                 filtered.append(app)
 

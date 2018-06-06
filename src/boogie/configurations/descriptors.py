@@ -134,9 +134,11 @@ class EnvDescriptor:
         self.type = type
 
     def __set_name__(self, owner, name):
+        prefix = getattr(owner, 'env_prefix', '')
         if self.name is None:
-            prefix = getattr(owner, 'env_prefix', '')
             self.name = prefix + name
+        elif '{' in self.name:
+            self.name = name.format(prefix=prefix, attr=name)
 
     def __get__(self, instance, cls=None):
         if instance is None:

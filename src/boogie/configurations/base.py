@@ -1,3 +1,5 @@
+import inspect
+import itertools
 import logging
 import os
 import sys
@@ -8,6 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 from .descriptors import Env
 
 log = logging.getLogger('boogie')
+NOT_GIVEN = object()
 
 
 def save_configuration(conf_class, where=None):
@@ -51,7 +54,7 @@ def save_configuration(conf_class, where=None):
     # with upper case names.
     try:
         conf = conf_class()
-        where.update(conf.get_settings())
+        where.update(conf.load_settings())
     except Exception as exc:
         log.error('Error loading configurations: %s' % exc)
         raise
@@ -104,7 +107,7 @@ class Conf:
         """
         return settings
 
-    def get_settings(self):
+    def load_settings(self):
         """
         Return a dictionary with all settings defined by the configuration.
 
@@ -113,12 +116,65 @@ class Conf:
         """
         if self._settings is None:
             self.prepare()
+
+            # Load standard settings
             settings = {
-                attr: getattr(self, attr, None)
-                for attr in dir(self)
-                if (attr.isupper() and not attr.startswith('_'))
+                attr: getattr(self, attr)
+                for attr in set(with_getter_attributes(dir(self)))
             }
+            settings = {k: v for k, v in settings.items() if v is not NOT_GIVEN}
             if settings.get('ENVFILE') is None:
                 settings.pop('ENVFILE', None)
             self._settings = self.finalize(settings)
         return dict(self._settings)
+
+    def __getattr__(self, attr):
+        if attr.isupper():
+            func = getattr(self, f'get_{attr.lower()}', None)
+            if func is None:
+                raise AttributeError(f'Invalid attribute {attr}')
+            value = get_value(func, self, attr)
+            setattr(self, attr, value)
+            return value
+        raise AttributeError(attr)
+
+
+#
+# Auxiliary methods
+#
+def get_value(func, ns, which):
+    """
+    Evaluate function using given namespace to inject arguments.
+    """
+    spec = inspect.getfullargspec(func)
+    callargs = {}
+
+    with_default = itertools.chain(
+        args_with_default(spec.args, spec.defaults or (), NOT_GIVEN),
+        [(k, spec.kwonlydefaults[k]) for k in spec.kwonlyargs],
+    )
+    for name, default in with_default:
+        if name == 'self':
+            continue
+        value = getattr(ns, name.upper(), default)
+        if value is NOT_GIVEN:
+            msg = f'{which}: configuration must define a {name.upper()} attribute'
+            raise TypeError(msg)
+        callargs[name] = value
+    return func(**callargs)
+
+
+def args_with_default(names, defaults, fillvalue=None):
+    rnames = reversed(names)
+    rdefaults = reversed(defaults)
+    pairs = itertools.zip_longest(rnames, rdefaults, fillvalue=fillvalue)
+    return reversed(list(pairs))
+
+
+def with_getter_attributes(attrs):
+    for attr in attrs:
+        if attr.isupper() and not attr.startswith('_'):
+            yield attr
+        elif attr.startswith('get_'):
+            attr = attr[4:].upper()
+            yield attr

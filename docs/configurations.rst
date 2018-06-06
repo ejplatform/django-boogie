@@ -36,17 +36,15 @@ Getting started
         # A variable that can be overridden by an environment setting
         ENV_VARIABLE = env(42)
 
-        # We also have environment-enabled properties
-        @env.property(type=float)
-        def OTHER_VARIABLE(self, value):
-            if value is None:
-                return self.get_value(self.env('SOMEVAR', 0))
-            else:
-                return value
+        # Lowercase methods starting with get_* are also interpreted as
+        # variables. All expected arguments are extracted from the current
+        # configuration
+        def get_forty_three(self, env_variable):
+            return env_variable + 1
 
         # Methods, lowercase variables, etc, can be used as normal, but they
         # will not be exported to the settings module.
-        def get_value(self, index):
+        def compute_value(self, index):
             options = [1, 2, 3, 4]
             return options[index]
 
@@ -60,20 +58,19 @@ A deeper dive
 
 Everything you known about standard Python class definitions apply here:
 configurations can have properties, methods, can define variables during
-__init__, etc. Boogie configuration classes accept all of that and introduce
-almost no magic in this process. The whole process of how init_configuration
-works is very simple:
+__init__, etc. Boogie configuration classes accept all of that. The whole
+process of how init_configuration works is very simple:
 
 1) It creates an instance of the chosen configuration class.
-2) It calls the .get_settings() method of that instance. This method should
+2) It calls the .load_settings() method of that instance. This method should
    return a dictionary of settings variables.
 3) It inserts all those settings in the current DJANGO_SETTINGS_MODULE module.
 
-You can override the .get_settings() method to do whatever you want. The
+You can override the .load_settings() method to do whatever you want. The
 default behavior, however, is like so:
 
-1) It calls the .prepare() hook of the configuration instance.
-2) It creates a dictionary of settings by collecting all upper case attributes
+1) Call the .prepare() hook of the configuration instance.
+2) Create a dictionary of settings by collecting all uppercase attributes
    and their corresponding values.
-3) It calls the .finalize(settings) hook with the settings dictionary and
+3) Call the .finalize(settings) hook with the resulting settings dictionary and
    return the result.

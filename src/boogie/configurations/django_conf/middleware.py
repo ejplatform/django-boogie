@@ -6,7 +6,6 @@ class MiddlewareConf(InstalledAppsConf):
     Configure middleware classes.
     """
 
-    MIDDLEWARE = property(lambda self: self.get_middleware())
     with_middleware = InstalledAppsConf.with_app
 
     def get_middleware(self):

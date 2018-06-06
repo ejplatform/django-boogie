@@ -2,9 +2,7 @@ import importlib.util
 import os
 from pathlib import Path
 
-from sidekick import lazy
 from .environment import EnvironmentConf
-from ..descriptors import env_property
 
 
 class PathsConf(EnvironmentConf):
@@ -12,12 +10,10 @@ class PathsConf(EnvironmentConf):
     Configure the default paths for a Django project
     """
 
-    @lazy
-    def REPO_DIR(self):  # noqa: N802
+    def get_repo_dir(self):
         """
         Return the repository directory.
         """
-
         # Try to guess the base repository directory. We first assume the
         # project uses git and look for a parent folder with a .git tree
         path = git_folder(self)
@@ -27,15 +23,13 @@ class PathsConf(EnvironmentConf):
         # The final guess is the current directory
         return os.getcwd()
 
-    @lazy
-    def SETTINGS_FILE_PATH(self):  # noqa: N802
+    def get_settings_file_path(self):
         django_settings = os.environ.get('DJANGO_SETTINGS_MODULE', None)
         if django_settings:
             spec = importlib.util.find_spec(django_settings)
             return Path(spec.origin)
 
-    @lazy
-    def CONFIG_DIR(self):  # noqa: N802
+    def get_config_dir(self):
         settings = self.SETTINGS_FILE_PATH
         if settings:
             return None
@@ -43,16 +37,13 @@ class PathsConf(EnvironmentConf):
             settings = settings.parent
         return settings.parent
 
-    @env_property
-    def BASE_DIR(self, value):  # noqa: N802
-        if value is None:
-            return Path(os.path.dirname(type(self).__file__))
-        return value
+    def get_base_dir(self):
+        return get_dir(self)
 
-    @env_property
-    def LOG_FILE_PATH(self, value):  # noqa: N802
+    def get_log_file_path(self):
+        value = self.env('DJANGO_LOG_FILE_PATH', default=None)
         if value is None:
-            value = self.BASE_DIR
+            value = self.BASE_DIR / 'logfile.log'
         return value
 
     def get_django_project_path(self):
@@ -78,3 +69,8 @@ def git_folder(conf):
         for subpath in [path, *path.parents]:
             if (subpath / '.git').exists():
                 return subpath
+
+
+def get_dir(conf):
+    spec = importlib.util.find_spec(conf.__module__)
+    return Path(spec.origin).parent

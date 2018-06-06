@@ -1,9 +1,9 @@
 # flake8: noqa N802
 import contextlib
+import types
 
 import mock
 import pytest
-import types
 from environ import Env, sys, os
 
 from boogie.configurations import Conf, DjangoConf, save_configuration
@@ -32,6 +32,18 @@ class TestConfWithEnv:
     @pytest.fixture
     def conf(self, conf_class):
         return conf_class()
+
+    def test_do_not_have_get_value_method(self, conf_class):
+        with pytest.raises(AttributeError):
+            print(conf_class.get_value)
+            print(Conf.get_value)
+
+        with pytest.raises(AttributeError):
+            print(conf_class().get_value)
+            print(Conf().get_value)
+
+        with pytest.raises(AttributeError):
+            print(DjangoConf.get_value)
 
     def test_can_create_env_descriptors(self):
         assert isinstance(env(42), EnvDescriptor)
@@ -117,7 +129,7 @@ class TestConfWithEnvProperty:
 
 
 class TestSettings:
-    @pytest.fixture
+    @pytest.fixture(scope='class')
     def conf_class(self):
         class ConfClass(Conf):
             V1 = env(1)
@@ -146,9 +158,9 @@ class TestSettings:
     def test_conf_get_settings(self, conf_class):
         conf = conf_class()
         with environ():
-            assert conf.get_settings() == self.DEFAULT_VALUES
+            assert conf.load_settings() == self.DEFAULT_VALUES
 
-        assert conf.get_settings() == conf.get_settings()
+        assert conf.load_settings() == conf.load_settings()
 
     def test_save_configurations(self, conf_class):
         ns = {}
@@ -182,10 +194,27 @@ class TestSettings:
         del sys.modules['boogie.fake_test_module']
 
 
+class TestGetterMethods:
+    @pytest.fixture(scope='class')
+    def conf_class(self):
+        class ConfClass(Conf):
+            def get_v1(self):
+                return 42
+
+            def get_v2(self, v1):
+                return v1 + 1
+
+        return ConfClass
+
+    def test_load_variables(self, conf_class):
+        assert conf_class().load_settings() == {'V1': 42, 'V2': 43}
+
+
 class TestDjangoSettings:
     def test_django_conf_create_minimum_configuration(self):
         conf = DjangoConf()
-        settings = conf.get_settings()
+        settings = conf.load_settings()
+        from pprint import pprint; pprint(settings)
 
         assert {
             'ADMIN_URL',
@@ -210,10 +239,12 @@ class TestDjangoSettings:
             'USE_L10N',
             'USE_TZ',
             'WSGI_APPLICATION'
-        }.issubset(settings)
+        } - set(settings) == set()
 
     def test_secret_key_is_deterministic(self):
         conf1 = DjangoConf(environment='production')
         conf2 = DjangoConf(environment='production')
-        assert conf1.get_settings()['SECRET_KEY'] == \
-            conf2.get_settings()['SECRET_KEY']
+        assert conf1.load_settings()['SECRET_KEY'] == \
+               conf2.load_settings()['SECRET_KEY']
+
+
