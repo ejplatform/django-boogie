@@ -81,7 +81,10 @@ class Router(ModelLookupMixin, Sequence, list):
         # Check if should use the parent template or not
         name = normalize_name(name, function)
         if template is None and self.template is not None:
-            template = self.template.format(name=name)
+            if isinstance(self.template, str):
+                template = self.template.format(name=name)
+            else:
+                template = [x.format(name=name) for x in self.template]
         kwargs['name'] = name
         kwargs['template'] = template
 
