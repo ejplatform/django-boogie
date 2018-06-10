@@ -69,8 +69,8 @@ class EnumMeta(enum.EnumMeta):
         for attr, descr in zip(names, descriptions):
             setattr(cls, attr + '_DESCRIPTION', descr)
             case = getattr(cls, attr)
-            case.description = descr
-            cls._descriptions[case] = descr
+            case.description = str(descr)
+            cls._descriptions[case] = str(descr)
 
     def __hash__(cls):  # noqa: N805
         return id(cls)
