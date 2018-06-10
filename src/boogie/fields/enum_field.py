@@ -51,21 +51,21 @@ class EnumField(models.Field):
             self._impl = models.SmallIntegerField
         else:
             self._impl = models.CharField
-        kwargs['choices'] = get_choices_from_enum(enum)
         super().__init__(*args, **kwargs)
+        self.choices = get_choices_from_enum(enum)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         args = [self.enum] + args
-        del kwargs['choices']
+        kwargs.pop('choices')
         return name, path, args, kwargs
 
     def get_internal_type(self):
         return self._impl.get_internal_type(self)
 
     def to_python(self, value):
-        if not isinstance(value, self.enum):
-            value = value_to_enum(self.enum, value)
+        if value in self.empty_values:
+            return None
         value = self._impl.to_python(self, value)
         return value_to_enum(self.enum, value)
 
@@ -106,6 +106,8 @@ class EnumDescriptor:
 
     def __set__(self, instance, value):
         enum = self.enum
+        if value == '':
+            value = next(iter(enum))
         if not isinstance(value, (enum, NoneType)):
             value = value_to_enum(enum, value)
         instance.__dict__[self.name] = value
@@ -168,8 +170,6 @@ def value_to_enum(enum_type, value):
         return enum_type(str(value))
     except ValueError:
         pass
-
-    print(enum_type, list(enum_type))
 
     # Give up!
     raise ValueError('not a valid value for enumeration: %r' % value)
