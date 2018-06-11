@@ -59,7 +59,8 @@ class Router(ModelLookupMixin, Sequence, list):
         """
 
         def decorator(func):
-            self.register(func, path, name, **kwargs)
+            route = self.register(func, path, name, **kwargs)
+            func.as_view = route.view_function
             return func
 
         return decorator

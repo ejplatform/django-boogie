@@ -103,6 +103,9 @@ class CollectionProxy(Sequence):
         for obj in self._obj:
             yield Proxy(obj, *args)
 
+    def __bool__(self):
+        return bool(self._obj)
+
 
 class MappingProxy(Mapping, CollectionProxy):
     def __iter__(self):

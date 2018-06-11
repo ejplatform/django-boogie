@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ImproperlyConfigured
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, Http404
 from django.shortcuts import render
 from django.urls import path
 from django.views.decorators.cache import never_cache, cache_control
@@ -79,13 +79,18 @@ class Route(ModelLookupMixin):
 
         function = as_request_function(self.function)
         decorators = ['login', 'perms', 'cache', 'gzip', 'xframe', 'csrf']
+        if self.object:
+            decorators.remove('perms')
         kwargs = {attr: getattr(self, attr) for attr in decorators}
 
         @apply_decorators(**kwargs)
         def view_function(request, **kwargs):
-            self.prepare_arguments(request, kwargs)
-            result = function(request, **kwargs)
-            return self.prepare_response(result, request)
+            try:
+                self.prepare_arguments(request, kwargs)
+                result = function(request, **kwargs)
+                return self.prepare_response(result, request)
+            except PermissionError as exc:
+                return HttpResponseForbidden(str(exc))
 
         return view_function
 
@@ -120,6 +125,13 @@ class Route(ModelLookupMixin):
         This step transforms the view arguments before passing them to the view
         function.
         """
+        if self.object and self.perms:
+            obj = args.get(self.object)
+            if obj is not None:
+                user = request.user
+                for perm in self.perms:
+                    if not user.has_perm(perm, obj):
+                        raise Http404
 
     def compatible_path(self):
         """
