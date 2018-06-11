@@ -36,18 +36,18 @@ def proxy_seq(seq, user=None, *, values=None, perms=None, rules=None, **kwargs):
 #
 # Auxiliary classes
 #
-class Proxy(sk.Deferred):
+class Proxy(sk.Proxy):
     """
     Acts as a proxy of objects with arbitrary additional parameters.
     """
 
     def __init__(self, obj, user, values, perms, rules, kwargs):
-        super().__init__(lambda: obj)
+        super().__init__(obj)
         self._kwargs = kwargs
         self._user = user
-        self._values = values
-        self._perms = perms
-        self._rules = rules
+        self._values = values or ()
+        self._perms = perms or {}
+        self._rules = rules or {}
 
     def __getattr__(self, attr):
         value = NO_VALUE
@@ -80,8 +80,7 @@ class CollectionProxy(Sequence):
     Acts as a proxy for a immutable collection of objects: i.e., attributes
     are augmented after iteration.
     """
-    _extra_args = lazy(lambda x:
-                       (x._user, x._values, x._perms, x._rules, x._kwargs))
+    _args = lazy(lambda x: (x._user, x._values, x._perms, x._rules, x._kwargs))
 
     def __init__(self, obj, user, values, perms, rules, kwargs):
         self._obj = obj
@@ -96,11 +95,11 @@ class CollectionProxy(Sequence):
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):
-            return CollectionProxy(self._obj[idx], *self._extra_args)
-        return Proxy(self._obj[idx], *self._extra_args)
+            return CollectionProxy(self._obj[idx], *self._args)
+        return Proxy(self._obj[idx], *self._args)
 
     def __iter__(self):
-        args = self._extra_args
+        args = self._args
         for obj in self._obj:
             yield Proxy(obj, *args)
 
@@ -110,7 +109,7 @@ class MappingProxy(Mapping, CollectionProxy):
         return iter(self._obj)
 
     def items(self):
-        args = self._extra_args
+        args = self._args
         return ((k, Proxy(v, *args)) for k, v in self._obj.items())
 
 
@@ -129,8 +128,8 @@ class QuerySetProxy(CollectionProxy):
             def value(*args, **kwargs):
                 result = function(*args, **kwargs)
                 if isinstance(result, QuerySet):
-                    return QuerySetProxy(result, *self._extra_args)
-                return Proxy(result, *self._extra_args)
+                    return QuerySetProxy(result, *self._args)
+                return Proxy(result, *self._args)
 
         setattr(self, attr, value)
         return value
