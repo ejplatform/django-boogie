@@ -158,12 +158,19 @@ def value_to_enum(enum_type, value):
     # Maybe we provided the enum name
     if isinstance(value, str):
         try:
-            value = getattr(enum_type, value)
-            if isinstance(value, enum_type):
-                return value
-            raise TypeError
+            new_value = getattr(enum_type, value)
+            if isinstance(new_value, enum_type):
+                return new_value
         except (AttributeError, TypeError):
             pass
+
+        # Sometimes the string comes in the form of <TypeName>.<Enum Name>
+        if value.startswith(enum_type.__name__ + '.'):
+            attr = value[len(enum_type.__name__) + 1:]
+            if attr and hasattr(enum_type, attr):
+                new_value = getattr(enum_type, attr)
+                if isinstance(new_value, enum_type):
+                    return new_value
 
     # Check if value can be coerced to string
     try:

@@ -57,7 +57,7 @@ class Proxy(sk.Proxy):
         if attr in self._kwargs:
             value = self._kwargs[attr]
             if callable(value):
-                value = value(obj)
+                value = value(self)
         if attr in self._values:
             value_id = self._values[attr]
             value = compute(value_id, obj, user)
