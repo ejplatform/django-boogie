@@ -9,7 +9,7 @@ except ImportError:
         'django-boogie[rest].'
     )
 
-from .base import RestAPI
+from .rest_api import RestAPI
 from .utils import to_json_default
 from . import utils as _utils
 

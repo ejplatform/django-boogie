@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 
 
-class RestAPIViewSet(viewsets.ModelViewSet):
+class RestAPIBaseViewSet(viewsets.ModelViewSet):
     """
     Standard boogie view set.
     """

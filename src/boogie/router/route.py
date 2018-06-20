@@ -174,7 +174,12 @@ def as_request_function(function):
 
     if spec.args and spec.args[0] == 'request':
         return function
-    return lambda request, *args, **kwargs: function(*args, **kwargs)
+
+    @functools.wraps(function)
+    def request_function(request, *args, **kwargs):
+        return function(*args, **kwargs)
+
+    return request_function
 
 
 def apply_decorators(view=None, login=False, staff=False, perms=None,  # noqa: C901
