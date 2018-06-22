@@ -23,6 +23,8 @@ class ApiInfo(Mapping):
         self.version = version
         self.parent = parent
         self.registry = {}
+        self.explicit_viewsets = {}
+        self.serializer_class_cache = {}
 
     def __getitem__(self, model):
         model = as_model(model)
@@ -75,6 +77,22 @@ class ApiInfo(Mapping):
         Return the default lookup_field used for the given model.
         """
         return self[model].lookup_field
+
+    #
+    # Registry
+    #
+    def register_viewset(self, base_url, viewset):
+        """
+        Manually associates viewset with the given url.
+        """
+        self.explicit_viewsets[base_url] = viewset
+
+    def register_serializer(self, model, serializer):
+        """
+        Manually associates viewset with the given url.
+        """
+        model = as_model(model)
+        self.serializer_class_cache[model] = serializer
 
     #
     # Viewset class builder

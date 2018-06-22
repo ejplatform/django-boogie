@@ -1,3 +1,5 @@
+.. automodule:: boogie.fields
+
 ======
 Fields
 ======
@@ -41,7 +43,7 @@ Now we can define a RoleEnum and use a EnumField in order to simplify things.
 .. code-block:: python
 
     from boogie import models
-    from boogie.types import DescriptionEnum
+    from boogie.fields import DescriptionEnum
 
 
     class RoleEnum(DescriptionEnum):
@@ -59,22 +61,25 @@ Now we can define a RoleEnum and use a EnumField in order to simplify things.
             return self.role == self.ROLE_TEACHER
 
 
-The EnumField accepts standard Python :cls:`enum.Enum` and :cls:`enum.IntEnum`
-classes. Boogie defines the corresponding :cls:`boogie.Enum` :cls:`boogie.IntEnum` that
+The EnumField accepts standard Python :class:`Enum` and :class:`IntEnum`
+classes. Boogie defines the corresponding :class:`Enum` :class:`IntEnum` that
 provides human-friendly names for each enumeration and thus integrates
 more nicely with Django and gettext.
 
-A model that declares a :cls:`EnumField` is automatically filled with all
-possible ROLE_* attributes for each value in the enumeration. :cls:`EnumField`s
+A model that declares a :class:`EnumField` is automatically filled with all
+possible ROLE_* attributes for each value in the enumeration. :class:`EnumField`s
 automatically computes the 'choices' argument, and users cannot override it.
 
 
-.. autoclass:: boogie.fields.EnumField
+API Documentation
+=================
+
+.. autoclass:: EnumField
     :members:
 
-.. autoclass:: boogie.Enum
+.. autoclass:: Enum
     :members:
 
-.. autoclass:: boogie.IntEnum
+.. autoclass:: IntEnum
     :members:
 

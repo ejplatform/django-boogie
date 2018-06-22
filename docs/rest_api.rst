@@ -9,9 +9,9 @@ a lot of boilerplate to declare even simple APIs. This is aggravated if we
 want to build a truly RESTful API with HATEAOS controls (also known as a level
 3 API according to `Richardson maturity model <https://martinfowler.com/articles/richardsonMaturityModel.html>`_).
 This is how REST is supposed to work and we should really aim for this kind
-architecture. DRF allow us to do this, but it is not the easier path. In Boogie,
-creating a RESTful API can be as simple as adding a few decorators to your
-model declarations.
+architecture if using REST. DRF allow us to do this, but it is not the easier
+path. In Boogie, creating a RESTful API can be as simple as adding a few decorators
+to your model declarations.
 
 .. ignore-next-block
 .. code-block:: python
@@ -43,21 +43,20 @@ model declarations.
             return self.name
 
 
-Now on your project's urls.py, just add:
-
+Now, just add the following line on your project's urls.py:
 
 .. ignore-next-block
 .. code-block:: python
 
     urlpatterns = [
-        ...
+        ...,
         path('api/', include(rest_api.urls)),
     ]
 
-Under the hood, Boogie creates the Serializer and ViewSet classes for each
+Under the hood, Boogie creates Serializer and ViewSet classes for each
 model using Django REST Framework and configure a router that organizes every
 end-point declared. Boogie enforces API versioning, so you should point your
-browser to "/api/v1/" to see something like this:
+browser to "/api/v1/" in order to obtain something like this:
 
 
 .. code-block:: json
@@ -70,7 +69,7 @@ browser to "/api/v1/" to see something like this:
 
 Each resource is then constructed automatically according to the information
 passed to the rest_api decorator. In our case, it exposes all fields of each
-model and stores foreign relations as hyperlinks under the "links" property:
+model and stores foreign relations as hyperlinks under the "links" object:
 
 .. code-block:: json
 
@@ -102,8 +101,11 @@ Additional URLs
 By default, Boogie creates two kinds of routes for each resource: one is a list
 of resources (usually under /api/v1/<resource-name>/) and the other is a detail
 view for each resource (under /api/v1/<resource-name>/<id>/). It is possible to
-create additional URLs associated with either a single resource or the default
-queryset.
+create additional URLs associated with either a single resource (detail view)
+or a queryset (list view).
+
+
+
 
 Custom serializers
 ------------------
@@ -167,3 +169,7 @@ meaning that the decorator applies to all versions on the list.
         return book.readers.all()
 
 
+API Documentation
+=================
+
+.. autoclass:: RestAPI

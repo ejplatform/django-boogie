@@ -21,5 +21,5 @@ Django Boogie can be installed using pip::
 
     $ python3 -m pip install django-boogie
 
-Or better yet, add it to your requirements.txt or setup.py. After installing
-with pip, you'll probably want to add ``'boogie'`` to your ``INSTALLED_APPS``.
+Or better yet, add it to your requirements.txt or setup.py. Boogie does not
+need to be added to your ``INSTALLED_APPS``. It requires Django 2.0+ and Python 3.6+.

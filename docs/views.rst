@@ -2,8 +2,8 @@
 Class based views
 =================
 
-Old Django introduced generic function-based views. While those views were
-convenient, the original implementation lacks composability: function-based
+Old Django versions used generic function-based views. While those views were
+convenient, the original implementation lacked composability: function-based
 generic views implement common usage patterns, but were hard to modify and
 reuse code across implementations. Now, Django introduced class-based views
 to solve those problems. The new implementation, however, has its own set

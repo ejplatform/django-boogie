@@ -2,6 +2,8 @@
 boogie.apps.tasks
 =================
 
+(NOT IMPLEMENTED YET)
+
 Boogie tasks app provides integration with celery to run tasks in the background
 and store results to the database. It aims to have a straightforward interface
 that we can easily use to register new tasks and run operations on the

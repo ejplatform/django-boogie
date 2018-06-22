@@ -2,14 +2,15 @@
 Configurations
 ==============
 
-Django settings.py module is often a point of a lot of friction in a Django
-project. Modules are very bad to compose and not convenient to reuse. Boogie
+Django settings.py module is often a point of friction in a Django project.
+Modules are very bad to compose and not convenient to reuse. Boogie
 takes inspiration on django-configurations and integrates it with django-environ
 to make the settings module more manageable. The gist is that configurations are
-now defined in by class inheritance and not by using modules.
+now defined by a class structure (using inheritance heavily) and not by setting
+variables on modules.
 
 Boogie also provides a few reusable configuration classes that makes it much
-easier to build a new project.
+easier to build a new project from scratch.
 
 
 Getting started
@@ -20,7 +21,7 @@ Getting started
     # in your settings.py
     from boogie.configurations import Conf, env
 
-    class Conf(Conf):
+    class Config(Conf):
         """
         An example of configuration class showing a few options
         """
@@ -49,7 +50,7 @@ Getting started
             return options[index]
 
     # Save settings in the default DJANGO_SETTINGS_MODULE module
-    Conf.save_settings()
+    Config.save_settings()
 
 
 
@@ -59,7 +60,7 @@ A deeper dive
 Everything you known about standard Python class definitions apply here:
 configurations can have properties, methods, can define variables during
 __init__, etc. Boogie configuration classes accept all of that. The whole
-process of how init_configuration works is very simple:
+process of how save_settings works is very simple:
 
 1) It creates an instance of the chosen configuration class.
 2) It calls the .load_settings() method of that instance. This method should

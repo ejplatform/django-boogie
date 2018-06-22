@@ -4,11 +4,13 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.urls import path, include
 from rest_framework import routers
+from rest_framework.viewsets import ModelViewSet
 
+from operator import attrgetter
 from sidekick import lazy
 from .api_info import ApiInfo
 from .resource_info import ResourceInfo
-from .utils import as_model
+from .utils import as_model, natural_base_url
 
 log = logging.getLogger('boogie.rest_api')
 
@@ -101,6 +103,81 @@ class RestAPI:
             info[model] = resource_info
         return resource_info
 
+    def register_viewset(self, viewset=None, base_url=None, *,  # noqa: C901
+                         version='v1', model=None, skip_serializer=False):
+        """
+        Register a viewset class responsible for handling the given url.
+
+        If a ModelViewSet is given, the viewset is automatically associated
+        with a model and registered. Can be used as a decorator if the viewset
+        argument is omitted.
+
+        Args:
+            viewset:
+                Viewset subclass.
+            base_url:
+                Base url under which the viewset will be mounted. RestAPI can
+                infer this URL from the model, when possible.
+            version:
+                API version name.
+            model:
+                Model associated with the viewset, when applicable.
+            skip_serializer:
+                If True, do not register serializer of ModelViewSet subclasses.
+        """
+
+        if isinstance(viewset, str) and base_url is None:
+            base_url, viewset = viewset, None
+        if viewset is None:
+            args = locals()
+            args.pop('self')
+            args.pop('viewset')
+            return lambda x: self.register_viewset(x, **args) or x
+
+        api_info = self.get_api_info(version, create=True)
+
+        # Discover the model class
+        if model is None and issubclass(viewset, ModelViewSet):
+            try:
+                model = viewset.queryset.model
+            except AttributeError:
+                raise ImproperlyConfigured(
+                    'could not determine the model of a ModelViewSet subclass. '
+                    'Please pass the model explicitly when registering this '
+                    'viewset.'
+                )
+        model = as_model(model)
+
+        # Discover url
+        if base_url is None and model:
+            base_url = natural_base_url(model)
+        if base_url is None:
+            raise ImproperlyConfigured(
+                'could not determine the base_url for this viewset. Please '
+                'pass this parameter explicitly when registering the viewset.'
+            )
+
+        # Create ResourceInfo, if applicable
+        if model is not None and skip_serializer:
+            kwargs = {'base_url': base_url}
+
+            def update(to, src):
+                try:
+                    kwargs[to] = src(viewset)
+                except AttributeError:
+                    pass
+
+            update('fields', attrgetter('Meta.fields'))
+            update('base_name', attrgetter('Meta.base_name'))
+            update('lookup_field', attrgetter('lookup_field'))
+
+            api_info[model] = ResourceInfo(model, **kwargs)
+
+        # Register resource
+        api_info.register_viewset(base_url, viewset)
+        if not skip_serializer and issubclass(viewset, ModelViewSet):
+            api_info.register_serializer(model, viewset.serializer_class)
+
     #
     # Decorators
     #
@@ -136,7 +213,77 @@ class RestAPI:
         info = self.get_resource_info(model, version)
         return decorator if func is None else decorator(func)
 
-    def property(self, model, func=None, *, version=None, name=None):
+    def detail_action(self, model, func=None, **kwargs):
+        """
+        Register function as an action for a detail view of a resource.
+
+        Decorator that register a function as an action to the provided
+        model.
+
+        Args:
+            model:
+                A Django model or a string with <app_label>.<model_name>.
+            func:
+                The function that implements the action. It is a
+                function that receives a model instance and return a response.
+                RestAPI understands the following objects:
+
+                * Django and DRF Response objects
+                * A JSON data structure
+                * An instance or queryset of a model that can be serialized by
+                  the current API (it will serialize to JSON and return this
+                  value)
+
+                Exceptions are also converted to meaningful responses of the
+                form ``{"error": true, "message": <msg>, "error_code": <code>}``.
+                It understands the following exception classes:
+
+                * PermissionError: error_code = 403
+                * ObjectNotFound: error_code = 404
+                * ValidationError: error_code = 400
+
+                The handler function can optionally receive a "request" as
+                first argument. RestAPI inspects function argument names to
+                discover which form to call. This strategy may fail if your
+                function uses decorators or other signature changing modifiers.
+            version:
+                Optional API version name.
+            name:
+                The action name. It is normally derived from the action function
+                by simply replacing underscores by dashes in the function
+                name.
+
+        Usage:
+
+            .. code-block:: python
+
+                @rest_api.detail_action('auth.User')
+                def books(user):
+                    return user.user.books.all()
+
+        This creates a new endpoint /users/<id>/books/ that displays all books
+        for the given user.
+        """
+        return self.action(model, func, detail=True, **kwargs)
+
+    def list_action(self, model, func=None, **kwargs):
+        """
+        Similar to :method:`detail_action`, but creates an endpoint associated
+        with a list of objects.
+
+        Usage:
+
+            .. code-block:: python
+
+                @rest_api.detail_action('auth.User')
+                def books(users):
+                    return Book.objects.filter(author__in=users)
+
+        The new endpoint is created under /users/books/
+        """
+        return self.action(model, func, detail=False, **kwargs)
+
+    def property(self, model, func=None, *, version='v1', name=None):
         """
         Decorator that declares a read-only API property.
 
@@ -186,11 +333,21 @@ class RestAPI:
         api_info = self.get_api_info(version)
         router = self.router_class()
         router.root_view_name += '-' + version
+        entries = []
 
+        # Register entries associated with models
         for model, info in sorted(api_info.items(), key=lambda x: x[1].base_url):
             viewset = api_info.viewset_class(model)
             url = api_info.base_url(model)
             base_name = api_info.base_name(model)
+            entries.append((url, viewset, base_name))
+
+        # Manually registered viewsets
+        for base_url, viewset in api_info.explicit_viewsets.items():
+            entries.append((base_url, viewset, viewset.base_name))
+
+        # Registered sorted entries
+        for url, viewset, base_name in sorted(entries):
             router.register(url, viewset, base_name)
             log.debug('created viewset %s at %s' % (url, base_name))
 
@@ -219,6 +376,13 @@ class RestAPI:
         """
         api_info = self.get_api_info(version=version)
         return api_info.serializer_class(model)
+
+    def get_viewset(self, model, version='v1'):
+        """
+        Return the viewset class for the given model.
+        """
+        api_info = self.get_api_info(version=version)
+        return api_info.viewset_class(model)
 
     def get_api_info(self, version='v1', create=False):
         """
