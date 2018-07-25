@@ -18,7 +18,7 @@ class TemplatesConf(PathsConf):
     def DJANGO_TEMPLATES(self):  # noqa: N802
         return {
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
-            'DIRS': self.get_django_templates_dirs(),
+            'DIRS': self.DJANGO_TEMPLATES_DIRS,
             'APP_DIRS': True,
             'OPTIONS': {
                 'context_processors': [
@@ -38,11 +38,10 @@ class TemplatesConf(PathsConf):
             options['environment'] = env
         return {
             'BACKEND': 'django.template.backends.jinja2.Jinja2',
-            'DIRS': self.get_jinja_templates_dirs(),
+            'DIRS': self.JINJA_TEMPLATES_DIRS,
             'APP_DIRS': True,
             'OPTIONS': {
-                'extensions': self.get_jinja2_extensions(),
-                'context_processors': self.get_jinja2_context_processors(),
+                'extensions': self.JINJA2_EXTENSIONS,
                 **options,
             },
         }
@@ -51,9 +50,6 @@ class TemplatesConf(PathsConf):
         return []
 
     def get_jinja_templates_dirs(self):
-        return []
-
-    def get_jinja2_context_processors(self):
         return []
 
     def get_jinja2_extensions(self):

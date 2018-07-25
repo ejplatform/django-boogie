@@ -1,4 +1,5 @@
 import logging
+from operator import attrgetter
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
@@ -6,7 +7,6 @@ from django.urls import path, include
 from rest_framework import routers
 from rest_framework.viewsets import ModelViewSet
 
-from operator import attrgetter
 from sidekick import lazy
 from .api_info import ApiInfo
 from .resource_info import ResourceInfo
@@ -183,26 +183,7 @@ class RestAPI:
     #
     def action(self, model, func=None, *, version=None, name=None, **kwargs):
         """
-        Decorator that register a function as an action to the provided
-        model.
-
-        Args:
-            model:
-                A Django model or a string with <app_label>.<model_name>.
-            func:
-                The function that implements the action.
-            name:
-                The action name. It is normally derived from the action function
-                by simply replacing underscores by dashes in the function
-                name.
-
-        Usage:
-
-            .. code-block:: python
-
-                @rest_api.action('auth.User')
-                def books(user):
-                    return user.user.books.all()
+        Base implementation of both detail_action and list_action.
         """
 
         def decorator(func):
@@ -279,7 +260,10 @@ class RestAPI:
                 def books(users):
                     return Book.objects.filter(author__in=users)
 
-        The new endpoint is created under /users/books/
+            The new endpoint is created under /users/books/
+
+        See Also:
+            :meth:`detail_action`
         """
         return self.action(model, func, detail=False, **kwargs)
 
@@ -298,6 +282,77 @@ class RestAPI:
         def decorator(func):
             prop_name = name or func.__name__
             info.add_property(prop_name, func)
+            return func
+
+        info = self.get_resource_info(model, version)
+        return decorator if func is None else decorator(func)
+
+    #
+    # Hooks
+    #
+    def save_hook(self, model, func=None, *, version='v1'):
+        """
+        Decorator that registers a hook that is executed when a new object is
+        about to be saved. This occurs both during object creation and when it
+        is updated. The provided function receives a request and an unsaved
+        instance as arguments and must save the instance to the database and
+        return it.
+
+        Args:
+            model:
+                The model name.
+            version:
+                API version. If omitted, it will be included in all API
+                versions.
+
+        Examples:
+
+            .. code-block:: python
+
+                @rest_api.save_hook(Book)
+                def save_book(request, book):
+                    book.save()  # Don't forget saving the instance!
+                    book.owner = request.user
+                    return book
+        """
+
+        def decorator(func):
+            info.add_hook('save', func)
+            return func
+
+        info = self.get_resource_info(model, version)
+        return decorator if func is None else decorator(func)
+
+    def delete_hook(self, model, func=None, *, version='v1'):
+        """
+        Decorator that registers a hook that is executed before a new object is
+        about to be deleted.
+
+        Deletion can be prevented either by raising an exception (which will
+        generate an error response) or silently by not calling the .delete()
+        method of a model or queryset.
+
+        Args:
+            model:
+                The model name.
+            version:
+                API version. If omitted, it will be included in all API
+                versions.
+
+        Examples:
+
+            .. code-block:: python
+
+                @rest_api.delete_hook(Book)
+                def delete_book(request, book):
+                    if book.user_can_remove(request.user):
+                        book.delete()
+                    else:
+                        raise PermissionError('user cannot delete book!')
+        """
+
+        def decorator(func):
+            info.add_hook('delete', func)
             return func
 
         info = self.get_resource_info(model, version)
@@ -333,24 +388,13 @@ class RestAPI:
         api_info = self.get_api_info(version)
         router = self.router_class()
         router.root_view_name += '-' + version
-        entries = []
-
-        # Register entries associated with models
-        for model, info in sorted(api_info.items(), key=lambda x: x[1].base_url):
-            viewset = api_info.viewset_class(model)
-            url = api_info.base_url(model)
-            base_name = api_info.base_name(model)
-            entries.append((url, viewset, base_name))
-
-        # Manually registered viewsets
-        for base_url, viewset in api_info.explicit_viewsets.items():
-            entries.append((base_url, viewset, viewset.base_name))
+        entries = sorted(api_info.iter_viewset_items())
 
         # Registered sorted entries
-        for url, viewset, base_name in sorted(entries):
+        for url, viewset in entries:
+            base_name = getattr(viewset, 'base_name', None)
             router.register(url, viewset, base_name)
             log.debug('created viewset %s at %s' % (url, base_name))
-
         return router
 
     def get_urls(self, version='v1'):

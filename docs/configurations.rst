@@ -1,45 +1,51 @@
+.. module:: boogie.configuration
+
 ==============
 Configurations
 ==============
 
 Django settings.py module is often a point of friction in a Django project.
-Modules are very bad to compose and not convenient to reuse. Boogie
-takes inspiration on django-configurations and integrates it with django-environ
-to make the settings module more manageable. The gist is that configurations are
-now defined by a class structure (using inheritance heavily) and not by setting
+Django settings are organized inside modules, but modules are very bad to
+compose and not convenient to reuse. Boogie takes inspiration on
+django-configurations and integrates it with django-environ to make the settings
+module more manageable. The main point is that configurations are
+now defined by a class structure (using inheritance) and not by setting
 variables on modules.
 
-Boogie also provides a few reusable configuration classes that makes it much
+Boogie also provides a few reusable configuration classes that makes it
 easier to build a new project from scratch.
 
 
 Getting started
 ===============
 
+Django uses a module to define a namespace for setting configuration variables.
+In Boogie configurations, we replace the module by a class:
+
 .. code-block:: python
 
     # in your settings.py
     from boogie.configurations import Conf, env
 
+    #
+    # The configuration class
+    #
     class Config(Conf):
-        """
-        An example of configuration class showing a few options
-        """
-
-        # Straightforward variable definition
+        # It accepts straightforward variable definitions
         A_SIMPLE_VARIABLE = 42
 
-        # Properties also work as usual
+        # Properties work as usual
         @property
         def A_PROPERTY_BASED_VARIABLE(self):
             return self.A_SIMPLE_VARIABLE + 1
 
-        # A variable that can be overridden by an environment setting
+        # Conf classes understand the env() object. Attributes declared with
+        # env can be overridden by environment variables.
         ENV_VARIABLE = env(42)
 
         # Lowercase methods starting with get_* are also interpreted as
         # variables. All expected arguments are extracted from the current
-        # configuration
+        # configuration and passed to the function
         def get_forty_three(self, env_variable):
             return env_variable + 1
 
@@ -49,29 +55,45 @@ Getting started
             options = [1, 2, 3, 4]
             return options[index]
 
-    # Save settings in the default DJANGO_SETTINGS_MODULE module
+    # Finally, this method saves the settings in the default
+    # DJANGO_SETTINGS_MODULE module
     Config.save_settings()
 
+
+The point of using classes, however, is not replacing where we define our
+namespace. Classes are much more suitable for code reuse through inheritance
+than flat module namespaces. The Conf base class we used above does not define
+any Django-specific behavior. Boogie defines a few classes aimed specifically
+at Django projects.
+
+Django configuration
+--------------------
+
+The base class
+
+
+
+API Documentation
+=================
 
 
 A deeper dive
 =============
 
-Everything you known about standard Python class definitions apply here:
-configurations can have properties, methods, can define variables during
-__init__, etc. Boogie configuration classes accept all of that. The whole
-process of how save_settings works is very simple:
+Most users don't have to read this section, but might be useful when you want
+to implement a reusable configuration class. The process of extracting settings
+from the class to a settings module works like so:
 
-1) It creates an instance of the chosen configuration class.
-2) It calls the .load_settings() method of that instance. This method should
-   return a dictionary of settings variables.
-3) It inserts all those settings in the current DJANGO_SETTINGS_MODULE module.
+1) The save_settings method creates an instance of the chosen configuration
+   class and calls the .load_settings() method of that instance. This method
+   should return a dictionary of settings variables.
+2) It inserts all variables in the current DJANGO_SETTINGS_MODULE module.
 
 You can override the .load_settings() method to do whatever you want. The
-default behavior, however, is like so:
+default behavior, however, is this:
 
 1) Call the .prepare() hook of the configuration instance.
-2) Create a dictionary of settings by collecting all uppercase attributes
+2) Creates a dictionary of settings by collecting all uppercase attributes
    and their corresponding values.
 3) Call the .finalize(settings) hook with the resulting settings dictionary and
    return the result.

@@ -1,6 +1,7 @@
 from copy import copy
 
 from django.db.models import Model, AutoField, FieldDoesNotExist
+from rest_framework.serializers import SerializerMethodField
 
 from sidekick import lazy
 from .serializers import RestAPISerializer
@@ -37,6 +38,14 @@ class ResourceInfo:
                 yield name, field.related_model
 
     @lazy
+    def property_methods(self):
+        ns = {}
+        for name, property in self.properties.items():
+            ns[name] = SerializerMethodField()
+            ns['get_' + name] = property_method(property, name)
+        return ns
+
+    @lazy
     def queryset(self):
         """
         Default queryset for the resource.
@@ -55,6 +64,26 @@ class ResourceInfo:
     @lazy
     def detail_actions(self):
         return {k: v for k, v in self.actions.items() if v['args'].get('detail')}
+
+    @lazy
+    def serializer_hook_methods(self):
+        methods = {}
+
+        if 'save' in self.hooks:
+            save_hook = wrap_request_instance_method(self.hooks['save'])
+            methods['save_hook'] = save_hook
+
+        return methods
+
+    @lazy
+    def viewset_hook_methods(self):
+        methods = {}
+
+        if 'delete' in self.hooks:
+            delete_hook = wrap_request_instance_method(self.hooks['delete'])
+            methods['delete_hook'] = delete_hook
+
+        return methods
 
     def __init__(self,
                  model: Model,
@@ -97,6 +126,7 @@ class ResourceInfo:
         # Hooks
         self.actions = {}
         self.properties = {}
+        self.hooks = {}
 
         # Viewsets
         self.viewset_base = viewset_base
@@ -110,6 +140,11 @@ class ResourceInfo:
         Return a copy of itelf.
         """
         return copy(self)
+
+    def add_hook(self, hook, function):
+        if hook not in ('save', 'delete'):
+            raise ValueError(f'invalid hook: {hook}')
+        self.hooks[hook] = function
 
     def add_field(self, name, check=True):
         """
@@ -172,3 +207,15 @@ class ResourceInfo:
 #
 def fields_from_model(model):
     return [f.name for f in model._meta.fields if not isinstance(f, AutoField)]
+
+
+def property_method(func, name):
+    def method(self, obj):
+        return func(obj)
+
+    method.__name__ = method.__qualname__ = 'get_' + name
+    return method
+
+
+def wrap_request_instance_method(func):
+    return lambda self, request, obj: func(request, obj)

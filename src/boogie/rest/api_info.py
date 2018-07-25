@@ -56,6 +56,12 @@ class ApiInfo(Mapping):
         }
         return '<ApiInfo version=%r, %r>' % (self.version, data)
 
+    def add_hook(self, model, hook, function):
+        """
+        Register function to the given hook.
+        """
+        self[model].add_hook(hook, function)
+
     def base_name(self, model):
         """
         Return the base_name string for the given model.
@@ -77,6 +83,25 @@ class ApiInfo(Mapping):
         Return the default lookup_field used for the given model.
         """
         return self[model].lookup_field
+
+    def iter_viewset_items(self):
+        """
+        Iterates over all tuples of (base_url, viewset) for all models in this
+        ApiInfo object.
+
+        This iterator includes classes defined explicitly using register_viewset
+        and implicitly by registering models with rest_api.
+        """
+        # Explicit viewsets
+        for url, viewset in self.explicit_viewsets.items():
+            yield (url, viewset)
+
+        # Model viewsets
+        for model in self:
+            viewset = self.viewset_class(model)
+            url = self.base_url(model)
+            if url not in self.explicit_viewsets:
+                yield (url, viewset)
 
     #
     # Registry
@@ -128,12 +153,17 @@ class ApiInfo(Mapping):
 
         bases = as_bases(info.viewset_base)
         name = info.model.__name__ + 'ViewSet'
+        base_name = self.base_name(model)
+
         namespace = {
             'Meta': viewset_meta(info, extra),
             'queryset': info.queryset,
             'serializer_class': self.serializer_class(model),
             'lookup_field': info.lookup_field,
+            'base_name': base_name,
+            'api_version': self.version,
             **info.action_methods,
+            **info.viewset_hook_methods,
         }
 
         return type(name, bases, namespace)
@@ -158,6 +188,9 @@ class ApiInfo(Mapping):
             'list_url': base_name + '-list',
             'lookup_field': info.lookup_field,
             'actions': list(info.detail_actions),
+            'api_version': self.version,
+            **info.property_methods,
+            **info.serializer_hook_methods,
         }
 
         return type(name, bases, namespace)
