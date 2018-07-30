@@ -1,6 +1,7 @@
 import traceback
 from collections import OrderedDict
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from rest_framework import serializers
@@ -56,6 +57,7 @@ class RestAPISerializer(serializers.ModelSerializer):
     list_url = None
     lookup_field = None
     api_version = None
+    schema = getattr(settings, 'BOOGIE_REST_API_SCHEMA', None)
 
     # Actions and extra links
     actions = ()
@@ -68,11 +70,13 @@ class RestAPISerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
         # Define base urls
-        request = self.context.get('request')
+        request = self.request
         if request is None:
             self.url_prefix = ''
         else:
-            self.url_prefix = f'{request.scheme}://{request.get_host()}'
+            scheme = self.get_scheme(request)
+            host = request.get_host()
+            self.url_prefix = f'{scheme}://{host}'
         if self.base_name is None:
             cls = type(self)
             name = '%s.%s' % (cls.__module__, cls.__qualname__)
@@ -82,6 +86,9 @@ class RestAPISerializer(serializers.ModelSerializer):
             )
         base_path = reverse(self.base_name + '-list')
         self.base_url = join_url(self.url_prefix, base_path)
+
+    def get_scheme(self, request):
+        return request.scheme if self.schema is None else self.schema
 
     def get_links(self, obj):
         """

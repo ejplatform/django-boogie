@@ -5,13 +5,16 @@
     :target: https://coveralls.io/github/fabiommendes/django-boogie?branch=master
 
 
+Django-Boogie is a framework formed by several loosely coupled modules that
+rethinks some of Django's practices. You can use any part of Boogie you want.
+
 Highlights:
 
+* Class-based settings.
 * Easy creation of rest APIs with a simple decorator.
+* A Flask inspired router that merges views and urls in a single module.
 * A Pandas inspired API for querysets + simple integration with Pandas.
 * A improved F object that allows more idiomatic query expressions.
-* Class-based settings.
-* Refactored class-based views.
 * And more!
 
 Installation instructions

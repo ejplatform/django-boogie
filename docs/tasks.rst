@@ -3,7 +3,7 @@ Job runner
 ==========
 
 Celery is a great task runner and takes care of many issues inherent to running
-asynchronous distributed systems.
+asynchronous tasks in distributed systems.
 
 
 .. code-block:: python

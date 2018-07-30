@@ -5,7 +5,8 @@ Boogie stack
 Boogie introduces an opinionated selection of apps and configurations for a
 more or less generic "good practices" web application. While we don't pretend
 that a one-size-fits-all approach will be the best solution for everyone, we
-believe that our proposed solution is good for the majority of cases.
+believe that our proposed solution is good or can be easily adapted for the
+majority of cases.
 
 We assume a web application with the following broad features:
 
@@ -14,7 +15,7 @@ We assume a web application with the following broad features:
 * It serves at least parts of its content in the "traditional way" using
   templates or server-side rendered HTML.
 * It has a build pipeline for static assets, specially CSS and Javascript.
-
+* It uses celery to run asynchronous jobs.
 
 Solutions
 =========

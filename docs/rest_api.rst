@@ -218,6 +218,21 @@ Example:
             raise PermissionError('user cannot delete book')
 
 
+Configurations
+--------------
+
+Boogie understands the following global configurations in Django settings:
+
+BOOGIE_REST_API_SCHEMA:
+    When not given, it uses the same uri schema (e.g., http) as the current
+    request object. It is possible to override this behavior to select an
+    specific schema such as 'http' or 'https'. This configuration may be necessary
+    when Django is running behind a reverse proxy such as Ngnix. Communication with
+    the reverse proxy is typically done without encryption, even when the public
+    facing site uses https. Setting ``BOOGIE_REST_API_SCHEMA='https'`` makes
+    all urls references provided by the API to use https independently of how
+    the user accessed the API endpoint.
+
 
 
 
@@ -294,4 +309,4 @@ The :obj:`rest_api` object is a globally available instance of the
 :class:`RestAPI` class.
 
 .. autoclass:: RestAPI
-:members:
+   :members:

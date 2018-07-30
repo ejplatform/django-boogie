@@ -133,6 +133,10 @@ class Route(ModelLookupMixin):
                     if not user.has_perm(perm, obj):
                         raise Http404
 
+        for argname in self.models:
+            if argname in args and args[argname] is None:
+                raise Http404('%s not found' % argname)
+
     def compatible_path(self):
         """
         Convert a Boogie-style path specification to a valid Django path.

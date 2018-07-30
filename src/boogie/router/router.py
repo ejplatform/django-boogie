@@ -27,7 +27,7 @@ class Router(ModelLookupMixin, Sequence, list):
                 route, = routes
                 patterns.append(route.path_handler())
             else:
-                raise NotImplementedError
+                raise NotImplementedError(pattern)
         super().__setitem__(slice(None, None), patterns)
         return patterns
 

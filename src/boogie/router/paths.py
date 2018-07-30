@@ -1,7 +1,6 @@
 import logging
 
-from django.db.models import fields
-from django.shortcuts import get_object_or_404
+from django.db.models import fields, Model
 from django.urls import register_converter
 from django.urls.converters import get_converter
 
@@ -37,10 +36,18 @@ class ModelConverterBase:
     lookup_field = 'pk'
 
     def to_python(self, path):
+        if isinstance(path, Model):
+            return path
         value = self.base_converter.to_python(path)
-        return get_object_or_404(self.model, **{self.lookup_field: value})
+        query = {self.lookup_field: value}
+        try:
+            return self.model.objects.get(**query)
+        except self.model.DoesNotExist:
+            return None
 
     def to_url(self, model):
+        if isinstance(model, str):
+            return model
         return getattr(model, self.lookup_field)
 
 
