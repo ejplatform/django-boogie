@@ -9,10 +9,11 @@ class InstalledAppsConf(EnvironmentConf):
     Mixin class that helps managing INSTALLED_APPS.
     """
 
-    USE_DJANGO_USERS = True
-    USE_DJANGO_ADMIN = True
-    THIRD_PARTY_APPS = []
-    PROJECT_APPS = []
+    def get_use_django_users(self):
+        return True
+
+    def get_use_django_admin(self):
+        return True
 
     def get_installed_apps(self):
         """
@@ -22,22 +23,22 @@ class InstalledAppsConf(EnvironmentConf):
         order.
         """
         return list(unique(filter(lambda x: x is not None, [
-            *self.get_project_apps(),
-            *self.get_third_party_apps(),
-            *self.get_django_contrib_apps(),
+            *self.PROJECT_APPS,
+            *self.THIRD_PARTY_APPS,
+            *self.DJANGO_CONTRIB_APPS,
         ])))
 
     def get_project_apps(self):
         """
         Return a list of apps created specifically for the project.
         """
-        return list(self.PROJECT_APPS)
+        return []
 
     def get_third_party_apps(self):
         """
         Return a list of third party dependencies.
         """
-        return list(self.THIRD_PARTY_APPS)
+        return []
 
     def get_django_contrib_apps(self):
         """
