@@ -135,11 +135,11 @@ def viewset_actions(actions):
     for name, action in actions.items():
         func = action['method']
         args = action['args']
-        action_fields[name] = action_method(func, **args)
+        action_fields[name] = action_method(func, name=name, **args)
     return action_fields
 
 
-def action_method(function, is_method=False, detail=True, **kwargs):
+def action_method(function, is_method=False, detail=True, name=None, **kwargs):
     """
     Creates a new method decorated with a @action decorator to be inserted
     in a DRF viewset.
@@ -165,7 +165,9 @@ def action_method(function, is_method=False, detail=True, **kwargs):
             result = function(request)
         return wrap_result(request, result)
 
-    method.__name__ = function.__name__
+    method.__name__ = name or function.__name__
+    if name:
+        kwargs['url_path'] = name
     method = action_decorator(detail=detail, **kwargs)(method)
     return method
 

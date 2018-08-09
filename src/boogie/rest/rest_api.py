@@ -187,7 +187,7 @@ class RestAPI:
         """
 
         def decorator(func):
-            action_name = name or func.__name__
+            action_name = name or func.__name__.replace('_', '-')
             info.add_action(action_name, func, **kwargs)
             return func
 
