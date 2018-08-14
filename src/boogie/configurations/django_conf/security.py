@@ -43,7 +43,7 @@ class SecurityConf(EnvironmentConf):
     ]
 
     def get_allowed_hosts(self):
-        return self.env.list('DJANGO_ALLOWED_HOSTS')
+        return self.env('DJANGO_ALLOWED_HOSTS', type=list, default=['localhost'])
 
     def get_password_hashers(self):
         if self.ENVIRONMENT == 'testing':
