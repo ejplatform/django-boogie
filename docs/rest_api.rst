@@ -106,6 +106,7 @@ associated with either a single document (detail view) or a queryset (list view)
 Those additional urls can be created with the @rest_api.action decorator. We
 suggest putting those functions in a ``api.py`` file inside your app.
 
+.. ignore-next-block
 .. code-block:: python
 
     # api.py file inside your app
@@ -201,6 +202,7 @@ Hooks can be registered using any of the decorators :meth:`RestAPI.save_hook`,
 
 Example:
 
+.. ignore-next-block
 .. code-block:: python
 
     @rest_api.save_hook(Book)

@@ -358,6 +358,34 @@ class RestAPI:
         info = self.get_resource_info(model, version)
         return decorator if func is None else decorator(func)
 
+    def query_hook(self, model, func=None, *, version='v1'):
+        """
+        Decorator that registers a hook that is executed to extract the
+        queryset used by the viewset class.
+
+        Args:
+            model:
+                The model name.
+            version:
+                API version. If omitted, it will be included in all API
+                versions.
+
+        Examples:
+
+            .. code-block:: python
+
+                @rest_api.query_hook(Book)
+                def query_hook(request, qs):
+                    return qs.all()
+            """
+
+        def decorator(func):
+            info.add_hook('query', func)
+            return func
+
+        info = self.get_resource_info(model, version)
+        return decorator if func is None else decorator(func)
+
     #
     # Actions
     #

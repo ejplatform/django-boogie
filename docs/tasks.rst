@@ -6,6 +6,7 @@ Celery is a great task runner and takes care of many issues inherent to running
 asynchronous tasks in distributed systems.
 
 
+.. ignore-next-block
 .. code-block:: python
 
     @job()

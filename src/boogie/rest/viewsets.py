@@ -27,6 +27,12 @@ class RestAPIBaseViewSet(viewsets.ModelViewSet):
     def delete_hook(self, request, instance):
         instance.delete()
 
+    def get_queryset(self):
+        return self.query_hook(self.request, self.queryset).all()
+
+    def query_hook(self, request, qs):
+        return qs
+
 
 def wrap_permission_error(error):
     return Response({

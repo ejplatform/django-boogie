@@ -78,10 +78,10 @@ class ResourceInfo:
     @lazy
     def viewset_hook_methods(self):
         methods = {}
-
-        if 'delete' in self.hooks:
-            delete_hook = wrap_request_instance_method(self.hooks['delete'])
-            methods['delete_hook'] = delete_hook
+        for hook in ('delete', 'query'):
+            if hook in self.hooks:
+                hook_method = wrap_request_instance_method(self.hooks[hook])
+                methods[hook + '_hook'] = hook_method
 
         return methods
 
@@ -142,7 +142,7 @@ class ResourceInfo:
         return copy(self)
 
     def add_hook(self, hook, function):
-        if hook not in ('save', 'delete'):
+        if hook not in ('save', 'delete', 'query'):
             raise ValueError(f'invalid hook: {hook}')
         self.hooks[hook] = function
 
