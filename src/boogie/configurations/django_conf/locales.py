@@ -6,27 +6,11 @@ from ..descriptors import env
 # Map country on default configurations.
 COUNTRY_DB = {
     None: {
-        'LOCALE_NAME': 'en_US',
         'LANGUAGE_CODE': 'en-us',
         'TIME_ZONE': 'Greenwich',
     },
 }
-COUNTRY_DB['USA'] = COUNTRY_DB[None]
-
-
-def country_method(var):
-    django_var = 'DJANGO_' + var.upper()
-    key = var.upper()
-
-    def country_method(self, value):
-        try:
-            return os.environ[django_var]
-        except KeyError:
-            return COUNTRY_DB[value.upper()][key]
-
-    country_method.__name__ = country_method.__qualname__ = var.lower()
-
-    return country_method
+COUNTRY_DB[''] = COUNTRY_DB[None]
 
 
 class LocaleConf(PathsConf):
@@ -38,27 +22,53 @@ class LocaleConf(PathsConf):
     USE_TZ = env(True)
     COUNTRY = env('', name='{attr}')
 
-    get_locale_path = country_method('locale_path')
-    get_locale_name = country_method('locale_name')
-    get_time_zone = country_method('time_zone')
+    def get_language_code(self, country):
+        return country_method('language_code', country)
+
+    def get_time_zone(self, country):
+        return country_method('time_zone', country)
+
+    def get_locale_name(self, language_code, country):
+        try:
+            return country_method('locale_name', country)
+        except ValueError:
+            if language_code:
+                lang, country = language_code.split('-')
+                return f'{lang}_{country.upper()}.UTF8'
+            else:
+                return ''
+
+    def get_locale_paths(self):
+        path = os.path.join(self.REPO_DIR, 'locale')
+        return self.env('LOCALE_PATH', type=list, default=[path])
 
 
-class NoLocalConf(PathsConf):
+class NoLocaleConf(PathsConf):
     """
     Base configuration for instances that do not use localization.
     """
     USE_I18N = env(False)
     USE_L10N = env(False)
     USE_TZ = False
-    LOCALE_NAME = None
     LANGUAGE_CODE = None
     TIME_ZONE = None
+
+
+def country_method(var, country):
+    django_var = 'DJANGO_' + var.upper()
+    key = var.upper()
+    if django_var in os.environ:
+        return os.environ[django_var]
+    try:
+        return COUNTRY_DB[country.upper()][key]
+    except KeyError as exc:
+        raise ValueError(f'{exc}: unknown for country {country}')
 
 
 #
 # Register countries
 #
-def country(country: list, locale_name, language_code, timezone):
+def country(country: list, language_code, timezone):
     """
     Return a function that creates a LocaleConf subclass specialized for a
     given country.
@@ -69,11 +79,28 @@ def country(country: list, locale_name, language_code, timezone):
     names = [country] if isinstance(country, str) else country
     for alias in names:
         COUNTRY_DB[alias.upper()] = {
-            'LOCALE_NAME': locale_name,
             'LANGUAGE_CODE': language_code,
-            'TIMEZONE': timezone,
-            'COUNTRY_NAME': country,
+            'TIME_ZONE': timezone,
         }
 
 
-country(['Brasil', 'Brazil'], 'pt_BR', 'pt-br', 'America/Sao_Paulo')
+# Ursal
+country(['Argentina'], 'es-ar', 'America/Buenos_Aires')
+country(['Bolívia'], 'es-bo', 'America/La_Paz')
+country(['Brasil', 'Brazil'], 'pt-br', 'America/Sao_Paulo')
+country(['Chile'], 'es-cl', 'America/Santiago')
+country(['Ecuador'], 'es-ec', 'America/Guayaquil')
+country(['Paraguay'], 'es-py', 'America/Asuncion')
+country(['Peru'], 'es-pe', 'America/Lima')
+country(['Uruguay'], 'es-uy', 'America/Montevideo')
+country(['Venezuela'], 'es-ve', 'America/Caracas')
+
+# Other american countries
+
+# Africa
+
+# Asia
+
+# Europe
+
+# Oceania

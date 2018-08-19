@@ -26,14 +26,6 @@ class EnvironmentConf(Conf):
             return self.get_django_project_path() + '.wsgi.application'
         return value
 
-    # Internationalization
-    # https://docs.djangoproject.com/en/2.0/topics/i18n/
-    LANGUAGE_CODE = env('en-us')
-    TIME_ZONE = env('UTC')
-    USE_I18N = env(True)
-    USE_L10N = env(True)
-    USE_TZ = env(True)
-
     #: It is often convenient to enable/disable Django ability to serve static
     #: files.
     SERVE_STATIC_FILES = env(True)
