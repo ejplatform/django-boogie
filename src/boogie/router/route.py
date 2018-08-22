@@ -70,7 +70,7 @@ class Route(ModelLookupMixin):
         self.gzip = gzip
         self.xframe = xframe
         self.csrf = csrf
-        self.decorators = decorators
+        self.decorators = tuple(decorators)
 
     def view_function(self):
         """
@@ -78,7 +78,9 @@ class Route(ModelLookupMixin):
         """
 
         function = as_request_function(self.function)
-        decorators = ['login', 'perms', 'cache', 'gzip', 'xframe', 'csrf']
+        decorators = ['login', 'staff', 'perms',
+                      'cache', 'gzip', 'xframe', 'csrf',
+                      'decorators']
         if self.object:
             decorators.remove('perms')
         kwargs = {attr: getattr(self, attr) for attr in decorators}
@@ -233,7 +235,7 @@ def apply_decorators(view=None, login=False, staff=False, perms=None,  # noqa: C
         view = csrf_protect(view)
 
     # Apply final decorators
-    for decorator in decorators:
+    for decorator in reversed(decorators):
         view = decorator(view)
     return view
 
