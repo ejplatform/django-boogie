@@ -123,7 +123,7 @@ def get_choices_from_enum(enum):
 
     def description(x):
         try:
-            return x.get_description()
+            return x.description
         except AttributeError:
             return human(x.name)
 
