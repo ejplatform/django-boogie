@@ -1,4 +1,4 @@
-from ..django_conf import Conf
+from ..base import Conf
 
 
 class UserenaConf(Conf):
