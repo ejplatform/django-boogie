@@ -162,11 +162,13 @@ def get_value(func, ns, which):
         # the attribute
         if name == 'env':
             prefix = ns.env_prefix
-            attr = name.upper()
+            attr = which.upper()
             var_name = getattr(func, 'env_name', f'{prefix}{attr}')
             type = getattr(func, 'env_type', str)
             default = getattr(func, 'env_default', default)
             value = ns.env(var_name, type=type, default=default)
+            if value is NOT_GIVEN:
+                name = which
 
         # Otherwise we just fetch the variable from the given namespace
         else:

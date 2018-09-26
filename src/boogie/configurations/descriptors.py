@@ -84,60 +84,23 @@ def env_default(**options):
     """
     Use env variable, if set, otherwise execute function to compute attribute.
     """
+    not_given = object()
 
     def decorator(func):
+        name = getattr(func, 'env_name', func.__name__)
+        type = getattr(func, 'env_type', str)
+        default = getattr(func, 'env_default', not_given)
+
         @functools.wraps(func)
         def decorated(self):
-            pass
+            value = self.env(name, type=type, default=default)
+            if value is not_given:
+                return func(self)
+            return value
 
         return decorated
 
     return decorator
-
-
-def env_property(*args, default=None, type=None, name=None):
-    """
-    Like env(), but declares a property that receives the value of the
-    environment variable (or None, if not set) and return the desired value.
-
-    Usage:
-        Used as a decorator:
-
-        class Conf:
-            @env.property
-            def HEX_ANSWER(self, value):
-                # The value of the environment variable is passed as the second
-                # argument.
-                if value is None:
-                    return hex(42)
-                else:
-                    return hex(value)
-
-    Args:
-        The decorator can receive the following optional keyword arguments:
-        default, type and name. They behave as the same arguments in
-        :func:`boogie.configurations.env`.
-
-    Notes:
-        This function should be accessed as the "property" of the "env"
-        function.
-
-    See Also:
-        :func:`boogie.configurations.env`
-
-    Returns:
-        A environ property.
-    """
-    kwargs = dict(default=default, type=type, name=name)
-
-    # Return decorator
-    if not args:
-        return lambda func: env_property(func, **kwargs)
-
-    fget, = args
-    if default is None and type is None:
-        kwargs.update(type=str)
-    return EnvProperty(fget, **kwargs)
 
 
 class EnvDescriptor:
@@ -215,6 +178,3 @@ class Env(environ.Env):
         method_name = EnvDescriptor.METHOD_MAPPER[type]
         method = getattr(self, method_name)
         return method(name, default=default, **kwargs)
-
-
-env.property = env_property

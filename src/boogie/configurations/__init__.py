@@ -1,4 +1,4 @@
-from .descriptors import env, env_property
+from .descriptors import env, env_settings, env_default
 from .base import Conf, save_configuration
 from .django_conf import (
     DjangoConf, EnvironmentConf, InstalledAppsConf, MiddlewareConf, TemplatesConf,

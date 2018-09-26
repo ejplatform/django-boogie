@@ -1,5 +1,9 @@
 from .environment import EnvironmentConf
-from ..descriptors import env, env_property
+from ..descriptors import env_settings
+
+
+def default(value):
+    return env_settings(default=value)(lambda self, env: env)
 
 
 class UrlsConf(EnvironmentConf):
@@ -7,16 +11,15 @@ class UrlsConf(EnvironmentConf):
     Configure urls for your Django project.
     """
 
-    ADMIN_URL = env('admin/')
-    LOGIN_URL = env('/login/')
-    LOGOUT_URL = env('/logout/')
-    STATIC_URL = env('/static/')
-    MEDIA_URL = env('/media/')
+    get_admin_url = default('/admin/')
+    get_login_url = default('/login/')
+    get_logout_url = default('/logout/')
+    get_static_url = default('/static/')
+    get_media_url = default('/media/')
 
-    @env_property
-    def ROOT_URLCONF(self, value):  # noqa: N802
-        if value is None:
-            return self.get_django_project_path() + '.urls'
-        return value
+    def get_append_slash(self):
+        return True
 
-    APPEND_SLASH = True
+    @env_settings(default=None)
+    def get_root_urlconf(self, env):
+        return env or self.get_django_project_path() + '.urls'

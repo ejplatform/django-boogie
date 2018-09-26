@@ -1,4 +1,3 @@
-# flake8: noqa N802
 import contextlib
 import types
 
@@ -7,7 +6,7 @@ import pytest
 from environ import Env, sys, os
 
 from boogie.configurations import Conf, DjangoConf, save_configuration
-from boogie.configurations.descriptors import EnvProperty, EnvDescriptor, env, env_property
+from boogie.configurations.descriptors import EnvDescriptor, env, env_settings
 
 
 @contextlib.contextmanager
@@ -47,7 +46,6 @@ class TestConfWithEnv:
 
     def test_can_create_env_descriptors(self):
         assert isinstance(env(42), EnvDescriptor)
-        assert not isinstance(env_property(type=int), EnvProperty)
 
     def test_class_env_descriptor_is_correctly_initialized(self, conf_class):
         descr = conf_class.EVAR
@@ -87,47 +85,6 @@ class TestConfWithEnv:
             assert conf.EVAR == 42
 
 
-class TestConfWithEnvProperty:
-    @pytest.fixture(scope='class')
-    def conf_class(self):
-        class ConfClass(Conf):
-            EVAR = env(42)
-
-            @env_property(default=0)
-            def EPROP(self, value):
-                return value + 1
-
-        return ConfClass
-
-    def test_can_create_env_property(self):
-        @env_property
-        def descr(self, v):
-            return v
-
-        assert isinstance(descr, EnvDescriptor)
-        assert descr.fget
-        assert descr.type == str
-        assert descr.default == None
-
-    def test_can_create_env_property_with_options(self):
-        @env_property(default=42, name='foo')
-        def descr(self, v):
-            return v
-
-        assert isinstance(descr, EnvDescriptor)
-        assert descr.fget
-        assert descr.type == int
-        assert descr.default == 42
-        assert descr.name == 'foo'
-
-    def test_conf_can_access_value(self, conf_class):
-        with environ():
-            assert conf_class().EPROP == 1
-
-        with environ({'EPROP': '10'}):
-            assert conf_class().EPROP == 11
-
-
 class TestSettings:
     @pytest.fixture(scope='class')
     def conf_class(self):
@@ -139,13 +96,13 @@ class TestSettings:
             V5 = env(('foo', 'bar'))
             V6 = env({'foo': 'bar'})
 
-            @env_property(default=0)
-            def V7(self, value):
-                return value + 1
+            @env_settings(default=0)
+            def get_v7(self, env):
+                return env + 1
 
-            @env_property(default=0, name='v8')
-            def V8(self, value):
-                return value + 2
+            @env_settings(default=0, name='v8')
+            def get_v8(self, env):
+                return env + 2
 
         return ConfClass
 
@@ -212,39 +169,39 @@ class TestGetterMethods:
 
 class TestDjangoSettings:
     def test_django_conf_create_minimum_configuration(self):
+        from pprint import pprint
+
         conf = DjangoConf()
         settings = conf.load_settings()
-        from pprint import pprint; pprint(settings)
+        pprint(settings)
 
-        assert {
-            'ADMIN_URL',
-            'ALLOWED_HOSTS',
-            'AUTH_PASSWORD_VALIDATORS',
-            'BASE_DIR',
-            'DATABASES',
-            'DEBUG',
-            'DJANGO_TEMPLATES',
-            'ENVIRONMENT',
-            'INSTALLED_APPS',
-            'JINJA_TEMPLATES',
-            'LANGUAGE_CODE',
-            'MIDDLEWARE',
-            'ROOT_URLCONF',
-            'SECRET_KEY',
-            'SERVE_STATIC_FILES',
-            'STATIC_URL',
-            'TEMPLATES',
-            'TIME_ZONE',
-            'USE_I18N',
-            'USE_L10N',
-            'USE_TZ',
-            'WSGI_APPLICATION'
-        } - set(settings) == set()
+        assert {'ADMIN_URL',
+                'ALLOWED_HOSTS',
+                'AUTH_PASSWORD_VALIDATORS',
+                'BASE_DIR',
+                'DATABASES',
+                'DEBUG',
+                'DJANGO_TEMPLATES',
+                'ENVIRONMENT',
+                'INSTALLED_APPS',
+                'JINJA_TEMPLATES',
+                'LANGUAGE_CODE',
+                'MIDDLEWARE',
+                'ROOT_URLCONF',
+                'SECRET_KEY',
+                'SERVE_STATIC_FILES',
+                'STATIC_URL',
+                'TEMPLATES',
+                'TIME_ZONE',
+                'USE_I18N',
+                'USE_L10N',
+                'USE_TZ',
+                'WSGI_APPLICATION'
+                } - set(settings) == set()
 
     def test_secret_key_is_deterministic(self):
         conf1 = DjangoConf(environment='production')
         conf2 = DjangoConf(environment='production')
-        assert conf1.load_settings()['SECRET_KEY'] == \
-               conf2.load_settings()['SECRET_KEY']
-
-
+        secret_key1 = conf1.load_settings()['SECRET_KEY']
+        secret_key2 = conf2.load_settings()['SECRET_KEY']
+        assert secret_key1 == secret_key2
