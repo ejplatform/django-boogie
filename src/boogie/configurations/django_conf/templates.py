@@ -9,13 +9,11 @@ class TemplatesConf(PathsConf):
     Configure templates.
     """
 
-    @property
-    def TEMPLATES(self):  # noqa: N802
+    def get_templates(self):
         templates = [self.DJANGO_TEMPLATES, self.JINJA_TEMPLATES]
         return [x for x in templates if x]
 
-    @property
-    def DJANGO_TEMPLATES(self):  # noqa: N802
+    def get_django_templates(self):
         return {
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': self.DJANGO_TEMPLATES_DIRS,
@@ -30,8 +28,7 @@ class TemplatesConf(PathsConf):
             },
         }
 
-    @property
-    def JINJA_TEMPLATES(self):  # noqa: N802
+    def get_jinja_templates(self):
         options = {}
         env = self.get_jinja2_environment()
         if env is not None:

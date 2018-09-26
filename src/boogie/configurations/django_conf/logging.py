@@ -10,16 +10,19 @@ class LoggingConf(PathsConf):
     Base configurations for logging.
     """
 
-    DEBUG_LOGGER = {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-        'propagate': True,
-    }
-    DEFAULT_LOGGER = {
-        'handlers': ['console'],
-        'level': 'INFO',
-        'propagate': True,
-    }
+    def get_debug_logger(self):
+        return {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        }
+
+    def get_default_logger(self):
+        return {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        }
 
     def get_logging_console_handler(self):
         return {

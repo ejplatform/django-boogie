@@ -1,3 +1,4 @@
+import functools
 from pathlib import Path
 
 import environ
@@ -54,6 +55,44 @@ def env(default, type=None, name=None, **kwargs):
         A env variable descriptor
     """
     return EnvDescriptor(default, type=type, name=name, **kwargs)
+
+
+def env_settings(**kwargs):
+    """
+    Configure information about environment variable associated with the given
+    method. This controls how the "env" attribute is exposed to the function.
+
+    Args:
+        name:
+            Name of the environment variable.
+        type:
+            Type (str, int, float, bool, etc).
+    """
+    valid_kwargs = {'name', 'type', 'default'}
+
+    def decorator(func):
+        for k, v in kwargs.items():
+            if k not in valid_kwargs:
+                raise TypeError(f'invalid argument: {k}')
+            setattr(func, f'env_{k}', v)
+        return func
+
+    return decorator
+
+
+def env_default(**options):
+    """
+    Use env variable, if set, otherwise execute function to compute attribute.
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def decorated(self):
+            pass
+
+        return decorated
+
+    return decorator
 
 
 def env_property(*args, default=None, type=None, name=None):

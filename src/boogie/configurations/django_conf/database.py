@@ -1,6 +1,9 @@
-from sidekick import lazy, placeholder as this
 from .environment import EnvironmentConf
 from ..descriptors import env
+
+
+def using_db(db):
+    return lambda self: db in self.DATABASES['default']['ENGINE']
 
 
 class DatabaseConf(EnvironmentConf):
@@ -10,18 +13,14 @@ class DatabaseConf(EnvironmentConf):
     See also: https://docs.djangoproject.com/en/2.0/ref/settings/#databases
     """
 
-    DATABASE_DEFAULT = env('sqlite:///local/db/db.sqlite3',
-                           type='db_url',
-                           name='DJANGO_DB_URL')
+    DATABASE_FROM_DB_URL = env('sqlite:///local/db/db.sqlite3',
+                               type='db_url',
+                               name='DJANGO_DB_URL')
 
-    DATABASES = lazy(lambda self: {
-        'default': dict(TEST={}, **self.DATABASE_DEFAULT),
-    })
+    def get_databases(self):
+        return {'default': {'TEST': {}, **self.DATABASE_FROM_DB_URL}}
 
     # Derived inspections
-    USING_SQLITE = lazy(this.is_using_db('sqlite'))
-    USING_POSTGRESQL = lazy(this.is_using_db('postgresql'))
-    USING_MYSQL = lazy(this.is_using_db('mysql'))
-
-    def is_using_db(self, db, which='default'):
-        return db in self.DATABASES[which]['ENGINE']
+    get_using_sqlite = using_db('sqlite')
+    get_using_postgresql = using_db('postgresql')
+    get_using_mysql = using_db('mysql')

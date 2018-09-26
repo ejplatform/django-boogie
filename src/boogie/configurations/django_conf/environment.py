@@ -1,5 +1,7 @@
+from django.core.exceptions import ImproperlyConfigured
+
 from ..base import Conf
-from ..descriptors import env, env_property
+from ..descriptors import env_settings, env_default
 
 
 class EnvironmentConf(Conf):
@@ -9,29 +11,41 @@ class EnvironmentConf(Conf):
 
     env_prefix = 'DJANGO_'
 
-    #: Django base environment. We suggest distinguishing between 'local',
-    #: 'test' and 'production'.
-    ENVIRONMENT = env('local')
+    def get_environment(self, env='local'):
+        """
+        Django base environment. We suggest distinguishing between 'local',
+        'test' and 'production'.
+        """
+        if env not in ['test', 'production', 'local']:
+            raise ImproperlyConfigured(f'Invalid environment: {env}')
+        return env
 
-    #: By default, debug is enabled only on 'local' and 'test' environments.
-    @env_property(type=bool)
-    def DEBUG(self, value):  # noqa: N802
-        if value is None:
+    @env_settings(type=bool, default=None)
+    def get_debug(self, env):
+        """
+        By default, debug is enabled only on 'local' and 'test' environments.
+        """
+        if env is None:
             return self.ENVIRONMENT == 'local'
-        return value
+        return env
 
-    @env_property
-    def WSGI_APPLICATION(self, value):  # noqa: N802
-        if value is None:
-            return self.get_django_project_path() + '.wsgi.application'
-        return value
+    @env_default()
+    def get_wsgi_application(self):
+        return self.DJANGO_PROJECT_PATH + '.wsgi.application'
 
-    #: It is often convenient to enable/disable Django ability to serve static
-    #: files.
-    SERVE_STATIC_FILES = env(True)
+    @env_default()
+    def get_site_id(self):
+        """
+        Site admin url, if Django admin app is installed.
+        """
+        return 1
 
-    #: Site admin url, if Django admin app is installed.
-    SITE_ID = 1
+    def get_serve_static_files(self):
+        """
+        It is often convenient to enable/disable Django ability to serve static
+        files.
+        """
+        return True
 
-    #: Authentication
-    AUTH_USER_MODEL = 'auth.User'
+    def get_auth_user_model(self):
+        return 'auth.User'

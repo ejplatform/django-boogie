@@ -80,9 +80,9 @@ class Conf:
         self.env = Env()
 
         cls = type(self)
-        for attr, value in kwargs.items():
-            attr = attr.upper()
-            if hasattr(cls, attr):
+        for name, value in kwargs.items():
+            attr = name.upper()
+            if hasattr(cls, attr) or hasattr(cls, f'get_{name}'):
                 setattr(self, attr, value)
             else:
                 raise TypeError(f'invalid argument: {attr}')
@@ -154,17 +154,38 @@ def get_value(func, ns, which):
         [(k, spec.kwonlydefaults[k]) for k in spec.kwonlyargs],
     )
     for name, default in with_default:
+        # Skip self
         if name == 'self':
             continue
-        value = getattr(ns, name.upper(), default)
+
+        # The "env" parameter injects the environment variable associated with
+        # the attribute
+        if name == 'env':
+            prefix = ns.env_prefix
+            attr = name.upper()
+            var_name = getattr(func, 'env_name', f'{prefix}{attr}')
+            type = getattr(func, 'env_type', str)
+            default = getattr(func, 'env_default', default)
+            value = ns.env(var_name, type=type, default=default)
+
+        # Otherwise we just fetch the variable from the given namespace
+        else:
+            value = getattr(ns, name.upper(), default)
+
+        # Save variables in dictionary
         if value is NOT_GIVEN:
-            msg = f'{which}: configuration must define a {name.upper()} attribute'
+            var_name = name.upper()
+            msg = f'{which}: configuration must define a {var_name} attribute'
             raise TypeError(msg)
         callargs[name] = value
+
     return func(**callargs)
 
 
 def args_with_default(names, defaults, fillvalue=None):
+    """
+    Iterate over pairs of (argument, default) values.
+    """
     rnames = reversed(names)
     rdefaults = reversed(defaults)
     pairs = itertools.zip_longest(rnames, rdefaults, fillvalue=fillvalue)
