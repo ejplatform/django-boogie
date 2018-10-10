@@ -64,6 +64,7 @@ class EnumField(models.Field):
         return self._impl.get_internal_type(self)
 
     def to_python(self, value):
+        print('topython', value)
         if value in self.empty_values:
             return None
         value = self._impl.to_python(self, value)
@@ -85,6 +86,13 @@ class EnumField(models.Field):
         # Create descriptor that wraps field access. The descriptor guarantees
         # that the object is always converted to Enum types
         setattr(cls, name, EnumDescriptor(self.enum, name))
+
+    def formfield(self, **kwargs):
+        # FIXME: Super ugly hack! Try to find a more official solution instead
+        # of patching a method of a live instance.
+        result = super().formfield(**kwargs)
+        result.widget.render = fix_renderer(result.widget.render)
+        return result
 
 
 class EnumDescriptor:
@@ -111,6 +119,19 @@ class EnumDescriptor:
         if not isinstance(value, (enum, NoneType)):
             value = value_to_enum(enum, value)
         instance.__dict__[self.name] = value
+
+
+def fix_renderer(renderer):
+    """
+    Patch the .render() function of a select widget to use the .value of a enum
+    field instead of a Enum instance.
+    """
+
+    def render(value=None, **kwargs):
+        value = getattr(value, 'value', value)
+        return renderer(value=value, **kwargs)
+
+    return render
 
 
 def get_choices_from_enum(enum):
