@@ -64,7 +64,6 @@ class EnumField(models.Field):
         return self._impl.get_internal_type(self)
 
     def to_python(self, value):
-        print('topython', value)
         if value in self.empty_values:
             return None
         value = self._impl.to_python(self, value)
