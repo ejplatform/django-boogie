@@ -1,4 +1,5 @@
 .. warning:: Beta software
+
     You are using a software that has not reached a stable version yet. Please
     beware that interfaces might change, APIs might disappear and general
     breakage can occur before *1.0*.

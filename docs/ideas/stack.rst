@@ -15,7 +15,9 @@ We assume a web application with the following broad features:
 * It serves at least parts of its content in the "traditional way" using
   templates or server-side rendered HTML.
 * It has a build pipeline for static assets, specially CSS and Javascript.
-* It uses celery to run asynchronous jobs.
+* It will be hosted in a PaaS host at least in some part of the application
+  lifecycle.
+
 
 Solutions
 =========

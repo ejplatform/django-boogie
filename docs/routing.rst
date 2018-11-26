@@ -113,38 +113,3 @@ Django's approach hinders testability:
 Django-boogie url router translates nice url template expressions to low-level
 regexes that Django understands.
 
-
-
-
-
-
-Boogie "PHP" mode
-=================
-
-PHP is certainly not a language we want to draw much inspiration from. However, we recognize
-that PHP has a great appeal due to the easy deploys of the LAMP stack during the
-early 2000's. Put a PHP file somewhere in your server it is magically live. This kind of
-simplicity is worth reproducing.
-
-We don't want to repeat this exact experience because of the host of problems
-it creates. However, some of this simplicity can be reproduced in Django in a
-sane and secure way.
-
-::
-
-    pages/
-      |- index.jinja2
-      \- user/
-           |- urls.yml
-           |- index.jinja2
-           |- detail.jinja2
-           \- profile.jinja2
-
-.. code-block:: yaml
-
-    # urls.yml
-    detail:
-        url: "/<slug:user.username>/"
-        user: auth.user
-    profile:
-        view: auth.profile_view

@@ -7,11 +7,12 @@ Automatic Rest APIs
 Django Rest Framework (DRF) is very powerful and flexible, but it also requires
 a lot of boilerplate to declare even simple APIs. This is aggravated if we
 want to build a truly RESTful API with HATEAOS controls (also known as a level
-3 API according to `Richardson maturity model <https://martinfowler.com/articles/richardsonMaturityModel.html>`_).
-This is how REST is supposed to work and we should really aim for this kind
-architecture if using REST. DRF allow us to do this, but it is not the easier
-path. In Boogie, creating a RESTful API can be as simple as adding a few decorators
+3 API according to `Richardson maturity model`_). This is how REST is supposed to
+work and, while DRF allow us to do this, it is not the easier path. In Boogie,
+creating a RESTful API can be as simple as adding a few decorators
 to your model declarations.
+
+.. _Richardson maturity model: https://martinfowler.com/articles/richardsonMaturityModel.html
 
 .. ignore-next-block
 .. code-block:: python
@@ -236,8 +237,6 @@ BOOGIE_REST_API_SCHEMA:
     the user accessed the API endpoint.
 
 
-
-
 Mixin hooks
 -----------
 
@@ -299,8 +298,8 @@ list.
 .. ignore-next-block
 .. code-block:: python
 
-    @rest_api.action(Book, version=['v1', 'v2'])
-    def readers(request, book):
+    @rest_api.list_action(Book, version=['v1', 'v2'])
+    def readers(request):
         return book.readers.all()
 
 

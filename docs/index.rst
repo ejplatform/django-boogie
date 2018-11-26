@@ -11,15 +11,19 @@ Welcome to django-boogie's documentation!
 
    Overview <overview.rst>
    Configurations <configurations.rst>
-   Boogie stack <stack.rst>
    Fields <fields.rst>
    ORM <orm.rst>
    REST APIs <rest_api.rst>
    Routing <routing.rst>
-   Views <views.rst>
    Rules <rules.rst>
-   Task App <apps/tasks.rst>
+   Testing <testing.rst>
    Users App <apps/users.rst>
+
+   Future ideas and Brainstorm <ideas/ideas.rst>
+   Boogie stack <ideas/stack.rst>
+   Views <ideas/views.rst>
+   Tasks <ideas/tasks.rst>
+
    Frequently asked questions <faq.rst>
    License <license.rst>
 

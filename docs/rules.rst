@@ -17,10 +17,11 @@ architecture.
 Django claims that the "controller" is the framework itself, with all the
 automatic wiring between different parts. While this may be partially true, it
 leaves an important aspect out: where code pertaining the business logic should
-live? In most Django projects, developers seems to have to decide between
-two evils: the "fat views" or "fat models" approaches.
+live? In most Django projects, developers have to decide between two evils:
+the "fat views" (i.e., the greater evil) or "fat models" (the lesser evil)
+approaches.
 
-Business logic should live in a separate module in order to promote a better
+Ideally, business logic should live in a separate module in order to promote better
 separation of concerns. Boogie favors the approach introduced by a third part
 app called django-rules_. Rules model requirements as simple functions that
 return boolean values. This is great for many
@@ -74,16 +75,16 @@ Predicate functions can have any of 3 signatures::
     func(obj, target) -> test a object relationship with target resource
 
 This framework is great for modelling permissions and generic authorization
-rules. In fact, if the subject of the rule is supposed to be a User instance,
-Rules make it possible to integrate with Django's permission system. In order
+rules. In fact, if the subject of the rule is a User instance, Rules make it
+possible to integrate with Django's permission system. In order
 to do so, use ``rules.add_perm`` instead of ``rules.add_rule`` and the rule will
 be tested using the builtin ``user.has_perm('rule name', target)`` method.
 
 With rules, we have a predictable place to put business logic that can be
 declared by defining and composing very simple predicate functions. While this
-is very convenient, it has shortcoming: predicate functions only provide values.
-This leaves all business logic that requires more sophisticated data out of the
-framework.
+is very convenient, it has a shortcoming: predicate functions only provide
+boolean values. This leaves all business logic that requires more sophisticated
+data out of the framework.
 
 Following a similar logic, boogie defines "value" functions that compute any
 arbitrary value from arbitrary objects. Similarly to rules, value functions can
@@ -115,40 +116,3 @@ Now we can use those functions to extract information about a user:
 
 >>> rules.compute('programming_fraction', user)                 # doctest: +SKIP
 0.42
-
-
-Proxy factories
-===============
-
-
-
-Proxy factories
----------------
-
-Proxy objects to solve a very simple problem: how can we attach additional
-properties to arbitrary objects that come exclusively from
-
-.. ignore-next-block
->>> github_link = lambda x: 'http://github.com/' + x.account + '/'
->>> user = proxy(user, is_hacker=True, account='torvalds', link=github_link)
->>> user.link
-'http://github.com/torvalds/'
-
-If called without the first argument, it becomes a proxy factory:
-
-.. ignore-next-block
->>> git_user = proxy(is_hacker=lambda x: x.username == 'torvalds', link=github_link)
->>> wrapped = git_user(linus)
->>> wrapped.is_hacker
-True
-
-
-Proxy understand rules and values:
-
-.. ignore-next-block
->>> proxy(rules={'is_ok'}, perms={'can_view': 'foo.can_view'}, values={})
-
-Similarly to proxy, we can have proxy_collection. It augments the elements of a
-collection rather than the collection itself. It supports query sets, dicts,
-and sequences and iterables.
-
