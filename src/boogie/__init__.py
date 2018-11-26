@@ -1,5 +1,4 @@
-from .db import db
-from .fields.enum_type import IntEnum, Enum
-
-__version__ = '0.9.4'
+__version__ = '0.10.0'
 __author__ = 'Fábio Macêdo Mendes'
+
+from .db import db

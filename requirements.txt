@@ -1,3 +1,5 @@
+django
+sidekick
 -e .[dev]
 -e .[docs]
 -e .[configurations]
