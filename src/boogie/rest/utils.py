@@ -7,8 +7,8 @@ from rest_framework.decorators import action as action_decorator
 from rest_framework.response import Response
 from rest_framework.utils.encoders import JSONEncoder
 
-from boogie.router.route import as_request_function
-from ..utils.text import humanize_name
+from ..router.route import as_request_function
+from ..utils.text import dash_case, humanize_name
 
 
 def as_model(model):
@@ -53,31 +53,6 @@ def natural_base_url(model):
     """
     name = dash_case(model.__name__ + 's')
     return humanize_name(name).replace(' ', '-')
-
-
-def dash_case(name):
-    """
-    Convert a camel case string to dash case.
-
-    Example:
-        >>> dash_case('SomeName')
-        'some-name'
-    """
-
-    letters = []
-    for c in name:
-        if c.isupper() and letters and letters[-1] != '-':
-            letters.append('-' + c.lower())
-        else:
-            letters.append(c.lower())
-    return ''.join(letters)
-
-
-def snake_case(name):
-    """
-    Convert camel case to snake case.
-    """
-    return dash_case(name).replace('-', '_')
 
 
 #

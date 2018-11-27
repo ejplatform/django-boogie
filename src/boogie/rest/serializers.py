@@ -1,15 +1,15 @@
 import traceback
 from collections import OrderedDict
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from rest_framework import serializers
 from rest_framework.relations import HyperlinkedRelatedField
 from rest_framework.serializers import raise_errors_on_nested_writes
 from rest_framework.utils import model_meta
-
 from sidekick import lazy
+
+from .settings import get_url_prefix
 from .utils import join_url
 
 
@@ -39,28 +39,13 @@ class RestAPIRelatedField(HyperlinkedRelatedField):
         return False
 
 
-class RestAPISerializer(serializers.ModelSerializer):
-    """
-    An extended HyperlinkedModelSerializer:
-
-    * Puts all relations to external resources on the obj.links attributes
-      (including a self link)
-    * Foreign key relations produce links on the links attribute
-    """
-
+class WithLinksSerializerMixin(serializers.Serializer):
     serializer_related_field = RestAPIRelatedField
     links = serializers.SerializerMethodField()
-
-    # Urls names and lookup
-    base_name = None
-    detail_url = None
-    list_url = None
-    lookup_field = None
     api_version = None
-    schema = getattr(settings, 'BOOGIE_REST_API_SCHEMA', None)
 
     # Actions and extra links
-    actions = ()
+    explicit_links = ()
 
     @lazy
     def request(self):
@@ -74,41 +59,28 @@ class RestAPISerializer(serializers.ModelSerializer):
         if request is None:
             self.url_prefix = ''
         else:
-            scheme = self.get_scheme(request)
-            host = request.get_host()
-            self.url_prefix = f'{scheme}://{host}'
-        if self.base_name is None:
-            cls = type(self)
-            name = '%s.%s' % (cls.__module__, cls.__qualname__)
-            raise ImproperlyConfigured(
-                'Must provide a "base_name" value for the RestAPISerializer '
-                'subclass. %s does not define such class attribute.' % name
-            )
-        base_path = reverse(self.base_name + '-list')
-        self.base_url = join_url(self.url_prefix, base_path)
-
-    def get_scheme(self, request):
-        return request.scheme if self.schema is None else self.schema
+            self.url_prefix = get_url_prefix(request)
 
     def get_links(self, obj):
         """
         Return the links dictionary mapping resource names to their
         corresponding links according to HATEAOS.
         """
-        return {**self._inner_links(obj), **self._outer_links(obj)}
+        return {
+            **self._inner_links(obj),
+            **self._explicit_links(obj),
+            **self._outer_links(obj),
+        }
 
     def _inner_links(self, obj):
-        """
-        Return a mapping of all inner hyperlinks in object.
-        """
+        return {}
 
-        lookup_field = self.lookup_field
-        kwargs = {lookup_field: getattr(obj, lookup_field)}
-        self_url = reverse(self.detail_url, kwargs=kwargs)
-        self_url = self.url_prefix + self_url
-
-        extra = {action: f'{self_url}{action}/' for action in self.actions}
-        return {'self': self_url, **extra}
+    def _explicit_links(self, obj):
+        """
+        Return a mapping with all explicitly registered hyperlinks.
+        """
+        request = self.request
+        return {name: func(request, obj) for name, func in self.explicit_links}
 
     def _outer_links(self, obj):
         """
@@ -129,6 +101,52 @@ class RestAPISerializer(serializers.ModelSerializer):
             links[name] = self.url_prefix + url
 
         return links
+
+
+class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
+    """
+    An extended HyperlinkedModelSerializer:
+
+    * Puts all relations to external resources on the obj.links attributes
+      (including a self link)
+    * Foreign key relations produce links on the links attribute
+    """
+
+    # Urls names and lookup
+    base_name = None
+    detail_url = None
+    list_url = None
+    lookup_field = None
+
+    # Actions and extra links
+    actions = ()
+    explicit_links = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.base_name is None:
+            cls = type(self)
+            name = '%s.%s' % (cls.__module__, cls.__qualname__)
+            raise ImproperlyConfigured(
+                'Must provide a "base_name" value for the RestAPISerializer '
+                'subclass. %s does not define such class attribute.' % name
+            )
+        base_path = reverse(self.base_name + '-list')
+        self.base_url = join_url(self.url_prefix, base_path)
+
+    def _inner_links(self, obj):
+        """
+        Return a mapping of all inner hyperlinks in object.
+        """
+
+        lookup_field = self.lookup_field
+        kwargs = {lookup_field: getattr(obj, lookup_field)}
+        self_url = reverse(self.detail_url, kwargs=kwargs)
+        self_url = self.url_prefix + self_url
+
+        extra = {action: f'{self_url}{action}/' for action in self.actions}
+        return {'self': self_url, **extra}
 
     #
     # Overloads serializer methods
@@ -196,3 +214,10 @@ class RestAPISerializer(serializers.ModelSerializer):
     def save_hook(self, request, instance):
         instance.save()
         return instance
+
+
+class RestAPIInlineSerializer(WithLinksSerializerMixin,
+                              serializers.ModelSerializer):
+    """
+    Base serializer class for inline models.
+    """

@@ -1,10 +1,12 @@
 from copy import copy
 
 from django.db.models import Model, AutoField, FieldDoesNotExist
+from django.urls import reverse
 from rest_framework.serializers import SerializerMethodField
-
 from sidekick import lazy
-from .serializers import RestAPISerializer
+
+from .serializers import RestAPISerializer, RestAPIInlineSerializer
+from .settings import get_url_prefix
 from .utils import natural_base_url, viewset_actions
 from .viewsets import RestAPIBaseViewSet
 
@@ -99,7 +101,7 @@ class ResourceInfo:
                  update_queryset=lambda x: x,
 
                  # Serializer options
-                 serializer_base=RestAPISerializer,
+                 serializer_base=None,
 
                  # Other options
                  inline=False, lookup_field='pk'):
@@ -127,12 +129,18 @@ class ResourceInfo:
         self.actions = {}
         self.properties = {}
         self.hooks = {}
+        self.links = {}
 
         # Viewsets
         self.viewset_base = viewset_base
         self.update_queryset = update_queryset
 
         # Serializer
+        if serializer_base is None:
+            if inline:
+                serializer_base = RestAPIInlineSerializer
+            else:
+                serializer_base = RestAPISerializer
         self.serializer_base = serializer_base
 
     def copy(self):
@@ -154,6 +162,12 @@ class ResourceInfo:
             self.meta.get_field(name)
         if name not in self.fields:
             self.fields.append(name)
+
+    def add_link(self, name, method):
+        """
+        Register a new field name.
+        """
+        self.links[name] = method
 
     def add_property(self, name, method):
         """
@@ -200,6 +214,19 @@ class ResourceInfo:
             'view_name': self.full_base_name(version) + '-detail',
             'lookup_field': self.lookup_field,
         }
+
+    def detail_hyperlink(self, obj, request=None, version=None):
+        """
+        Return API hyperlink for object.
+        """
+        attr = self.lookup_field
+        kwargs = {attr: getattr(obj, attr)}
+        if version:
+            view_name = self.full_base_name(version)
+        else:
+            view_name = self.base_name
+        path = reverse(view_name + '-detail', kwargs=kwargs)
+        return get_url_prefix(request) + path
 
 
 #

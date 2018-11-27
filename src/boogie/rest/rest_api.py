@@ -1,13 +1,14 @@
 import logging
 from operator import attrgetter
+from warnings import warn
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.viewsets import ModelViewSet
-
 from sidekick import lazy
+
 from .api_info import ApiInfo
 from .resource_info import ResourceInfo
 from .utils import as_model, natural_base_url
@@ -30,8 +31,9 @@ class RestAPI:
     @lazy
     def urls(self):
         versions = [v for v in self.api_registry if v is not None]
+        patterns = self.get_urlpatterns
         return [
-            *(path(f'{v}/', include(self.get_urls(v))) for v in versions),
+            *(path(f'{v}/', include(patterns(v))) for v in versions),
             path('', api_root_view(versions)),
         ]
 
@@ -96,11 +98,8 @@ class RestAPI:
         model = as_model(model)
         kwargs.update(inline=inline)
         resource_info = ResourceInfo(model, fields, **kwargs)
-        if inline:
-            self.inlines_registry[model, version] = resource_info
-        else:
-            info = self.get_api_info(version, create=True)
-            info[model] = resource_info
+        info = self.get_api_info(version, create=True)
+        info.register_resource(model, resource_info, inline=inline)
         return resource_info
 
     def register_viewset(self, viewset=None, base_url=None, *,  # noqa: C901
@@ -184,6 +183,8 @@ class RestAPI:
     def action(self, model, func=None, *, version=None, name=None, **kwargs):
         """
         Base implementation of both detail_action and list_action.
+
+        Please use one of those specific methods.
         """
 
         def decorator(func):
@@ -257,7 +258,7 @@ class RestAPI:
             .. code-block:: python
 
                 @rest_api.detail_action('auth.User')
-                def books(users):
+                def books():
                     return Book.objects.filter(author__in=users)
 
             The new endpoint is created under /users/books/
@@ -282,6 +283,27 @@ class RestAPI:
         def decorator(func):
             prop_name = name or func.__name__
             info.add_property(prop_name, func)
+            return func
+
+        info = self.get_resource_info(model, version)
+        return decorator if func is None else decorator(func)
+
+    def link(self, model, func=None, *, version='v1', name=None):
+        """
+        Decorator that declares a function to compute a link included into the
+        "links" section of the serialized model.
+
+        Args:
+            model:
+                The model name.
+            version:
+                API version. If omitted, it will be included in all API
+                versions.
+        """
+
+        def decorator(func):
+            link_name = name or func.__name__
+            info.add_link(link_name, func)
             return func
 
         info = self.get_resource_info(model, version)
@@ -406,6 +428,13 @@ class RestAPI:
         result = serializer(obj, many=many, context=ctx)
         return result.data
 
+    def get_hyperlink(self, obj, request=None, version='v1'):
+        """
+        Return the hyperlink of the given object in the API.
+        """
+        info = self.get_resource_info(type(obj), version=version)
+        return info.detail_hyperlink(obj, request, version)
+
     def get_router(self, version='v1'):
         """
         Gets a DRF router object for the given API version.
@@ -426,6 +455,10 @@ class RestAPI:
         return router
 
     def get_urls(self, version='v1'):
+        warn('this function is deprecated, please use get_urlpatterns instead.')
+        return self.get_router(version).urls
+
+    def get_urlpatterns(self, version='v1'):
         """
         Return a list of urls to be included in Django's urlpatterns::
 
@@ -434,7 +467,7 @@ class RestAPI:
 
                 urlpatterns = [
                     ...,
-                    path('api/v1/', include(rest_api.get_urls('v1')))
+                    path('api/v1/', include(rest_api.get_urlpatterns('v1')))
                 ]
 
         See Also:
@@ -463,7 +496,7 @@ class RestAPI:
         If version does not exist and create=True, it creates a new empty
         ApiInfo object.
 
-        Returns an :cls:`ApiInfo` instance.
+        Returns an :class:`ApiInfo` instance.
         """
         try:
             registry = self.api_registry[version]
@@ -488,7 +521,7 @@ class RestAPI:
                 Version string or None for the default api constructor.
 
         Returns:
-            A :cls:`ResourceInfo` instance.
+            A :class:`ResourceInfo` instance.
         """
         model = as_model(model)
         registry = self.get_api_info(version, create=True)

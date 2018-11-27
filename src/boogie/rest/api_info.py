@@ -1,9 +1,9 @@
 from collections import Mapping
 
 from django.core.exceptions import ImproperlyConfigured
+from sidekick import lazy
 
 from boogie.rest.utils import as_model, with_model_cache
-from sidekick import lazy
 
 
 class ApiInfo(Mapping):
@@ -23,17 +23,20 @@ class ApiInfo(Mapping):
         self.version = version
         self.parent = parent
         self.registry = {}
+        self.inline_models = {}
         self.explicit_viewsets = {}
         self.serializer_class_cache = {}
 
     def __getitem__(self, model):
         model = as_model(model)
-        try:
-            return self.registry[model]
-        except KeyError:
-            if self.parent is not None:
-                return self.parent[model]
-            raise
+        result = (
+                self.registry.get(model)
+                or self.inline_models.get(model)
+                or self.parent and self.parent.get(model)
+        )
+        if result is None:
+            raise KeyError(model)
+        return result
 
     def __setitem__(self, model, value):
         model = as_model(model)
@@ -119,6 +122,15 @@ class ApiInfo(Mapping):
         model = as_model(model)
         self.serializer_class_cache[model] = serializer
 
+    def register_resource(self, model, info, inline=False):
+        """
+        Register resource info object for model.
+        """
+        if inline:
+            self.inline_models[model] = info
+        else:
+            self[model] = info
+
     #
     # Viewset class builder
     #
@@ -189,6 +201,7 @@ class ApiInfo(Mapping):
             'lookup_field': info.lookup_field,
             'actions': list(info.detail_actions),
             'api_version': self.version,
+            'explicit_links': tuple(info.links.items()),
             **info.property_methods,
             **info.serializer_hook_methods,
         }
