@@ -9,19 +9,22 @@ from model_mommy.mommy import Mommy
 
 fake = FakeFactory.create()
 
-
-class FactoryMeta(type(DjangoModelFactory)):
-    def __getitem__(self, idx):
-        if isinstance(idx, slice):
-            pass
-        return ...
+FactoryMeta = type(DjangoModelFactory)
 
 
-class BoogieFactory(DjangoModelFactory, metaclass=FactoryMeta):
-    pass
+def __getitem__(self, idx):
+    if isinstance(idx, slice):
+        pass
+    return ...
+
+
+FactoryMeta.__getitem__ = __getitem__
 
 
 class BoogieMommy(Mommy):
+    """
+    Base for Boogie Model Mommy classes.
+    """
     attr_mapping = {}
     type_mapping = {}
 
@@ -57,7 +60,7 @@ def factory(model, **kwargs):
             continue
         ns[field.name] = implicit_declaration(model, field.name, ns, mommy)
 
-    return type(model.__name__ + 'Factory', (BoogieFactory,), ns)
+    return type(model.__name__ + 'Factory', (FactoryMeta,), ns)
 
 
 def explicit_declaration(model, name, value):
