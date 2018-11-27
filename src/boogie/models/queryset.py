@@ -442,7 +442,7 @@ def _(item, qs):
 @get_queryset_item.register(int)
 def _(n, qs):
     if n >= 0:
-        return super().__getitem__(n)
+        return super(QuerySet, qs).__getitem__(n)
     else:
         rev = qs.reverse() if qs.ordered else qs.order_by('-id')
         return rev[abs(n) - 1]
@@ -454,7 +454,7 @@ def _(slice, qs):
     if step is None and \
             (start is None or start >= 0) and \
             (stop is None or stop >= 0):
-        return super().__getitem__(slice)
+        return super(QuerySet, qs).__getitem__(slice)
     elif stop <= 0:
         if start != 0 and start is not None:
             raise ValueError(

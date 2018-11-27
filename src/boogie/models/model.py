@@ -17,7 +17,7 @@ class ModelBase(DjangoModelBase):
 
     def __new__(metacls, name, bases, ns, **kwargs):
         # Extract the correct base class
-        bases, kwargs = extract_bases(**kwargs)
+        bases, kwargs = extract_bases(bases, **kwargs)
 
         # Is abstract
         if 'Meta' in ns:
@@ -43,12 +43,6 @@ class ModelBase(DjangoModelBase):
         return super().__new__(metacls, name, bases, ns)
 
 
-class Model(models.Model, metaclass=ModelBase, abstract=True):
-    """
-    Base class for Boogie model.
-    """
-
-
 #
 # Utility
 #
@@ -67,3 +61,12 @@ def extract_bases(bases, timestamped=False, timeframed=False, status=False,
         bases = with_base(bases, polymorphic.PolymorphicModel)
 
     return bases, kwargs
+
+
+#
+# Base model
+#
+class Model(models.Model, metaclass=ModelBase, abstract=True):
+    """
+    Base class for Boogie model.
+    """
