@@ -40,7 +40,7 @@ def env(default, type=None, name=None, **kwargs):
             Environment holds arbitrary JSON data.
         path:
             Path to a valid file in the filesystem. Returns a
-            :cls:`pathlib.Path` instance.
+            :class:`pathlib.Path` instance.
         db_url:
             URL to a database connection, e.g., sqlite:///db.sqlite3 or
             psql://user:password@domain:port/database

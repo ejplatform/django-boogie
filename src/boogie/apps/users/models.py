@@ -1,18 +1,25 @@
 from django.apps import apps
 from django.contrib.auth import models as auth
-from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
 from sidekick import property as sk_property, placeholder as this
 
+from boogie import models
 
-class UserManager(auth.UserManager):
+
+class UserQuerySet(models.QuerySet):
     """
-    Manager class for Boogie users.
+    Base queryset for Boogie users.
     """
 
 
-class AbstractUser(auth.AbstractUser):
+class UserManager(models.Manager,
+                  auth.UserManager.from_queryset(UserQuerySet)):
+    """
+    Base manager for Boogie users.
+    """
+
+
+class AbstractUser(auth.AbstractUser, models.Model):
     """
     A user object with a single name field instead of separate first_name and
     last_name.
@@ -48,6 +55,9 @@ class AbstractUser(auth.AbstractUser):
         super().__init__(*args, **kwargs)
         if not self.name:
             self.name = self.username
+
+    def __str__(self):
+        return self.email
 
 
 class User(AbstractUser):

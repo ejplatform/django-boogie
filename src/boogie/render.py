@@ -12,7 +12,7 @@ def render_response(obj):
 
     By default, it tries to render object using :func:`render_html`. If it
     cannot be rendered that way and no handler was specified for the object
-    type, it returns a :cls:`django.http.HttpResponseServerError` response.
+    type, it returns a :class:`django.http.HttpResponseServerError` response.
     """
     try:
         html = render_html(obj)

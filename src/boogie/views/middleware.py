@@ -3,6 +3,7 @@ import sidekick as sk
 from django import http
 
 BOOGIE_VIEW_MIDDLEWARES = {}
+NOTGIVEN = object()
 
 
 def groups_required(groups, **kwargs):
@@ -48,9 +49,6 @@ def login_required(login_url=None, **kwargs):
         return login_required(login_url=login_url, **kwargs)(get_response)
 
     return middleware
-
-
-NOTGIVEN = object()
 
 
 def check_rule(rule, fn: callable = None, **kwargs):

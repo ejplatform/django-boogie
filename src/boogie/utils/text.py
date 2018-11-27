@@ -31,3 +31,60 @@ def plural(st):
     Convert string into a probable plural form.
     """
     return st + 's'
+
+
+def indent(text, indent='    '):
+    """
+    Indent text by the given indentation string.
+    """
+    return '\n'.join(indent + line for line in text.splitlines())
+
+
+def safe_repr(obj, max_length=None):
+    """
+    A safe version of repr that is guaranteed to never raise exceptions.
+    """
+    # noinspection PyBroadException
+    try:
+        data = str(obj)
+    except Exception as ex:
+        cls_name = type(obj).__name__
+        ex_name = type(ex).__name__
+        data = f'<{cls_name} object [{ex_name}: {ex}]>'
+
+    if max_length is not None and len(data) > max_length:
+        data = data[:max_length - 3] + '...'
+
+    return data
+
+
+def first_line(st):
+    """
+    Extracts first line of string.
+    """
+    return st.lstrip().partition('\n')[0]
+
+
+def dash_case(name):
+    """
+    Convert a camel case string to dash case.
+
+    Example:
+        >>> dash_case('SomeName')
+        'some-name'
+    """
+
+    letters = []
+    for c in name:
+        if c.isupper() and letters and letters[-1] != '-':
+            letters.append('-' + c.lower())
+        else:
+            letters.append(c.lower())
+    return ''.join(letters)
+
+
+def snake_case(name):
+    """
+    Convert camel case to snake case.
+    """
+    return dash_case(name).replace('-', '_')

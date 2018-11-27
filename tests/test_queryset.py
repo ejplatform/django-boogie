@@ -31,7 +31,7 @@ class TestQuerySetIndexing:
 
 class TestPandasIntegration:
     def test_queryset_to_dataframe(self, authors):
-        df = authors[:, ['name', 'age']].to_dataframe()
+        df = authors[:, ['name', 'age']].dataframe()
         assert (df['name'] == ['Author', 'Young', 'Old']).all()
         assert df['age'].equals(pd.Series([float('nan'), 18, 80], index=df.index))
 
