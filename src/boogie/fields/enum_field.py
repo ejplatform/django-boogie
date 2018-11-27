@@ -16,8 +16,8 @@ class EnumField(models.Field):
 
     Args:
         enum (type):
-            A subclass of :cls:`enum.Enum`. You should consider using
-            :cls:`boogie.types.DescriptionEnum` in order to provide
+            A subclass of :class:`enum.Enum`. You should consider using
+            :class:`boogie.types.DescriptionEnum` in order to provide
             human-friendly names for each enumeration value.
     """
 

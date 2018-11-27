@@ -2,6 +2,9 @@ from functools import wraps
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from sidekick import import_later
+
+autoslug = import_later('autoslug')
 
 
 def label(value):
@@ -44,24 +47,27 @@ def arg_from_settings(prop, name, default=None):
     return decorator
 
 
+# noinspection PyPep8Naming
 @label(_('slug'))
 def AutoSlugField(*args, **kwargs):  # noqa: N802
-    import autoslug
     return autoslug.AutoSlugField(*args, **kwargs)
 
 
+# noinspection PyPep8Naming
 @label(_('name'))
 @max_length('NAME_MAX_LENGTH', 40)
 def NameField(*args, **kwargs):  # noqa: N802
     return models.CharField(*args, **kwargs)
 
 
+# noinspection PyPep8Naming
 @label(_('title'))
 @max_length('TITLE_MAX_LENGTH', 140)
 def TitleField(*args, **kwargs):  # noqa: N802
     return models.CharField(*args, **kwargs)
 
 
+# noinspection PyPep8Naming
 @label(_('description'))
 @max_length('SHORT_DESCRIPTION_MAX_LENGTH', 255)
 def ShortDescriptionField(*args, **kwargs):  # noqa: N802
@@ -71,6 +77,7 @@ def ShortDescriptionField(*args, **kwargs):  # noqa: N802
     return models.CharField(*args, **kwargs)
 
 
+# noinspection PyPep8Naming
 @label(_('detailed description'))
 def LongDescriptionField(*args, **kwargs):  # noqa: N802
     kwargs.setdefault('help_text', _(

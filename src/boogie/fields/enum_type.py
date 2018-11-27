@@ -102,7 +102,7 @@ class IntEnum(enum.IntEnum,
 
 class Enum(enum.Enum, metaclass=EnumMeta):
     """
-    Similar to :cls:`boogie.IntEnum`, but accepts any type of value.
+    Similar to :class:`boogie.IntEnum`, but accepts any type of value.
     """
 
     def __hash__(self):

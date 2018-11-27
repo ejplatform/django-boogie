@@ -26,4 +26,5 @@ src/__init__.py
 .coverage
 
 # Private data
+local/src/boogie/apps/tasks/
 local/
