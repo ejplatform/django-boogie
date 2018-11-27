@@ -1,3 +1,4 @@
+from django.db import models
 from django.db.models import Field, Lookup, Q
 from django.db.models.sql import Query
 
@@ -51,7 +52,7 @@ def patch_query_with_resolve_lookup_value(query_class=Query):
 # Utility methods
 #
 def lookup_method(lookup):
-    "Factory function for lookup methods."
+    """Factory function for lookup methods."""
 
     def method(self, value):
         key = '%s__%s' % (self._name, lookup)
@@ -63,12 +64,22 @@ def lookup_method(lookup):
 
 
 def lookup_property(lookup):
-    "Factory function for simple lookup properties."
+    """Factory function for simple lookup properties."""
 
     def fget(self):
         return type(self)('%s__%s' % (self._name, lookup))
 
     return property(fget)
+
+
+def delegate_to_f_object(attr):
+    def delegate(self, *args, **kwargs):
+        obj = models.F(self._name)
+        method = getattr(obj, attr)
+        return method(*args, **kwargs)
+
+    delegate.__name__ = delegate.__qualname__ = attr
+    return delegate
 
 
 # Execute monkey patch

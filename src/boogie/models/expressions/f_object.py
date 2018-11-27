@@ -2,8 +2,8 @@ from django.db import models
 from django.db.models import expressions
 from django.db.models import functions
 
-from .fix import lookup_method, lookup_property
-from .functions import coalesce
+from .fix import lookup_method, lookup_property, delegate_to_f_object
+from .functions import coalesce, length
 from .geo import GeoAttribute
 
 
@@ -42,28 +42,29 @@ class F(expressions.Combinable, metaclass=FMeta):
     def __getattr__(self, attr):
         return self.getattr(attr)
 
-    # F-expression
-    def _delegate_to_f_object(self, *args, **kwargs):
-        fobj = models.F(self._name)
-        return fobj.resolve_expression(*args, **kwargs)
-
-    asc = desc = resolve_expression = _delegate_to_f_object
+    asc = delegate_to_f_object('asc')
+    desc = delegate_to_f_object('desc')
+    resolve_expression = delegate_to_f_object('resolve_expression')
     default_alias = 'boogie.F'
 
     #
-    #  Lookup operators not implemented by Combinable objects
+    # Comparison operators are not implemented by Combinable objects because
+    # this means overloading "==" to output a non-boolean value. This is
+    # generally considered to be a bad practice.
     #
     def __eq__(self, other):
         return models.Q(**{self._name: other})
 
-    __ne__ = lookup_method('ne')
+    def __ne__(self, other):
+        return ~(self == other)
+
     __lt__ = lookup_method('lt')
     __le__ = lookup_method('lte')
     __gt__ = lookup_method('gt')
     __ge__ = lookup_method('gte')
     __pos__ = asc
     __neg__ = desc
-    __hash__ = lambda self: hash(self._name)
+    __hash__ = (lambda self: hash(self._name))
 
     def __len__(self):
         msg = 'len() function not supported, please use F.%s.length() instead.'
@@ -76,17 +77,16 @@ class F(expressions.Combinable, metaclass=FMeta):
         """
         F.value.getattr('sub_field') <==> F.value.sub_field.
 
-        This method is necessary for deeply nested sub-queries if attribute
-        name conflicts with some method of the F class.
+        This method is necessary if attribute name conflicts with some method
+        of the F class.
         """
-        print(self, attr)
         return type(self)('%s__%s' % (self._name, attr))
 
-    def cast(self, type):
+    def cast(self, to_type):
         """
         Coerce an expression to a new value type.
         """
-        return functions.Cast(self._name, type)
+        return functions.Cast(self._name, to_type)
 
     def with_default(self, *args):
         """
@@ -186,7 +186,7 @@ class F(expressions.Combinable, metaclass=FMeta):
         """
         Return the size of string value.
         """
-        return functions.Length(self._name)
+        return length(self._name)
 
     def equals(self, value, case=True):
         """

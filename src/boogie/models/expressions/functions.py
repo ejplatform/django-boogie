@@ -1,38 +1,38 @@
 from django.db.models import functions
 
+from .combinable import get_comparable_class
 
-def concat(*args):
-    """
-    Concatenates the values of all given fields or expressions.
-    """
-    return functions.Concat(*args)
+concat = get_comparable_class(functions.Concat, """
+Concatenates the values of all given fields or expressions.
 
+Usage:
+    concat(F.first_name, ' ', F.last_name)
+""")
 
-def coalesce(*args):
-    """
-    Chooses the first non-null value from left to right.
+coalesce = get_comparable_class(functions.Coalesce, """
+Chooses the first non-null value from left to right.
 
-    Usage:
-        coalesce(F.savings_account, F.check_account, 0)
-    """
-    return functions.Coalesce(*args)
+Usage:
+    coalesce(F.savings_account, F.check_account, 0)
+""")
 
+greatest = get_comparable_class(functions.Greatest, """
+Chooses the greatest of the given arguments.
 
-def greatest(*args):
-    """
-    Chooses the greatest of the given values.
+Usage:
+    greatest(F.savings_account, F.check_account, 0)
+""")
 
-    Usage:
-        greatest(F.savings_account, F.check_account, 0)
-    """
-    return functions.Greatest(*args)
+least = get_comparable_class(functions.Least, """
+Chooses the smallest of the given arguments.
 
+Usage:
+    least(F.savings_account, F.check_account, 0)
+""")
 
-def least(*args):
-    """
-    Chooses the smallest of the given values.
+length = get_comparable_class(functions.Length, """
+Returns the length of a string.
 
-    Usage:
-        least(F.savings_account, F.check_account, 0)
-    """
-    return functions.Least(*args)
+Usage:
+    length(F.name)
+""")
