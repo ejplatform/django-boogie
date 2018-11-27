@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from boogie.router import Router
+from boogie.testing.pytest import UrlTester, CrawlerTester
 
 
 class TestRouter:
@@ -32,3 +33,20 @@ class TestRouter:
         route = router.register(lambda book: None, lookup_type={'book': 'str'})
         assert route.lookup_field['book'] == 'title'
         assert route.lookup_type['book'] == 'str'
+
+
+class TestAppUrlTester(UrlTester):
+    urls = {
+        None: [
+            '/hello/',
+            '/hello-simple/',
+            '/hello/foo/',
+        ],
+        'user': [],
+    }
+
+
+class TestUrlCrawl(CrawlerTester):
+    root = ['/links/']
+    user = 'user'
+    must_visit = ['/hello/me/']

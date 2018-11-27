@@ -1,6 +1,10 @@
 from django.utils.timezone import now, timedelta
 
+from boogie.testing.factories import factory
 from .models import User, Book
+
+user_factory = factory(User)
+book_factory = factory(Book)
 
 
 def author():

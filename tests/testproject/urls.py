@@ -7,5 +7,6 @@ from boogie.rest import rest_api
 urlpatterns = [
     path('api/', include(rest_api.urls)),
     path('admin/', admin.site.urls),
+    path('', include('tests.testapp.routes'))
 ]
 urlpatterns.extend(staticfiles_urlpatterns())

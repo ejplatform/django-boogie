@@ -23,7 +23,7 @@ def humanize_name(name):
             buffer.append(chr)
 
     parts.append(''.join(buffer))
-    return '-'.join(parts)
+    return ' '.join(parts)
 
 
 def plural(st):
@@ -40,13 +40,13 @@ def indent(text, indent='    '):
     return '\n'.join(indent + line for line in text.splitlines())
 
 
-def safe_repr(obj, max_length=None):
+def safe_repr(obj, max_length=None, repr=repr):
     """
     A safe version of repr that is guaranteed to never raise exceptions.
     """
     # noinspection PyBroadException
     try:
-        data = str(obj)
+        data = repr(obj)
     except Exception as ex:
         cls_name = type(obj).__name__
         ex_name = type(ex).__name__
@@ -80,7 +80,7 @@ def dash_case(name):
             letters.append('-' + c.lower())
         else:
             letters.append(c.lower())
-    return ''.join(letters)
+    return ''.join(letters).replace('_', '-')
 
 
 def snake_case(name):

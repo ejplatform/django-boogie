@@ -8,7 +8,7 @@ from django.urls import resolve
 
 from .client import Client
 from .crawler import check_link_errors
-from .urlchecker import LOGIN_REGEX, UrlChecker
+from .urlchecker import LOGIN_REGEX, UrlChecker as _UrlChecker
 from ..utils.text import snake_case
 
 User = get_user_model()
@@ -33,7 +33,7 @@ class URLTesterMeta(type):
         return type.__new__(mcs, name, bases, namespace)
 
 
-class URLTester(metaclass=URLTesterMeta, base=True):
+class UrlTester(metaclass=URLTesterMeta, base=True):
     """
     Base class for tests.
     """
@@ -72,7 +72,6 @@ class CrawlerTester:
 
     Can be configured by overriding the following attributes:
 
-    Attributes:
         bases (list of urls):
             List of (url, user) pairs used as the starting points of web
             crawling.
@@ -87,7 +86,7 @@ class CrawlerTester:
             Name of user instance fixture.
     """
 
-    bases = ['/']
+    root = '/'
     user = 'user'
     skip = ()
     xfail = ()
@@ -110,10 +109,11 @@ class CrawlerTester:
         """
         errors = {}
         user = conf['user']
+        root = self.root
+        if isinstance(root, str):
+            root = [root]
 
-        for url in self.bases:
-            if user is not None:
-                user = data[user]
+        for url in root:
             try:
                 check_link_errors(
                     url, visit=self.must_visit, skip=self.skip,
@@ -287,8 +287,8 @@ def check_urls_from_locals(variables):
     variables.pop('data')
     variables.pop('db')
     client = variables.pop('client')
-    checker = UrlChecker(self.urls, self.posts,
-                         self.login_regex, client=client)
+    checker = _UrlChecker(self.urls, self.posts,
+                          self.login_regex, client=client)
     errors = checker.check_url_errors(users=variables)
     if errors:
         for url, value in errors.items():

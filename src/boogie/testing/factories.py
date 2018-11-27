@@ -60,7 +60,7 @@ def factory(model, **kwargs):
             continue
         ns[field.name] = implicit_declaration(model, field.name, ns, mommy)
 
-    return type(model.__name__ + 'Factory', (FactoryMeta,), ns)
+    return type(model.__name__ + 'Factory', (DjangoModelFactory,), ns)
 
 
 def explicit_declaration(model, name, value):

@@ -1,3 +1,4 @@
+import html
 import io
 from functools import singledispatch
 
@@ -26,7 +27,11 @@ def render_response(obj):
         return HttpResponse(html)
 
 
-@singledispatch
+@render_response.register(str)
+def _(st):
+    return HttpResponse(html.escape(st))
+
+
 def render_html(obj):
     """
     Renders object as an HTML string in the given file.
@@ -46,3 +51,22 @@ def dump_html(obj, file):
     """
     type_name = obj.__class__.__name__
     raise TypeError(f'cannot convert {type_name} to html')
+
+
+#
+# Register hyperpython, if available
+#
+try:
+    from hyperpython import Element, Text
+except ImportError:
+    pass
+else:
+    @dump_html.register(Element)
+    @dump_html.register(Text)
+    def _(x, fd):
+        x.dump(fd)
+
+    @render_response.register(Element)
+    @render_response.register(Text)
+    def _(x):
+        return HttpResponse(str(x))

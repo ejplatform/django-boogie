@@ -55,16 +55,16 @@ should be visited. Web crawling based tests can be very slow and are hard to
 isolate. They are a nice when doing "integration tests", but are really poor
 to cover specific apps or functions.
 
-:class:`URLTester` provides a more fine grained option for testing the URLs of an
+:class:`UrlTester` provides a more fine grained option for testing the URLs of an
 specific app.
 
 .. code-block:: python
 
     # test_urls.py
-    from boogie.testing.pytest import URLTester
+    from boogie.testing.pytest import UrlTester
 
 
-    class TestURLs(URLTester):
+    class TestUrls(UrlTester):
         ... # TODO
 
 
