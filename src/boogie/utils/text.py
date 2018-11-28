@@ -1,3 +1,7 @@
+import contextlib
+import io
+
+
 def humanize_name(name):
     """
     "Humanize" camel case or Python variable name.
@@ -88,3 +92,40 @@ def snake_case(name):
     Convert camel case to snake case.
     """
     return dash_case(name).replace('-', '_')
+
+
+@contextlib.contextmanager
+def redirect_stdout(fd=None):
+    """
+    Redirect stdout to the given file descriptor.
+
+    If not file descriptor is given, creates a StringIO().
+    """
+    fd = io.StringIO() if fd is None else fd
+    with contextlib.redirect_stdout(fd):
+        yield fd
+
+
+@contextlib.contextmanager
+def redirect_stderr(fd=None):
+    """
+    Redirect stderr to the given file descriptor.
+
+    If not file descriptor is given, creates a StringIO().
+    """
+    fd = io.StringIO() if fd is None else fd
+    with contextlib.redirect_stderr(fd):
+        yield fd
+
+
+@contextlib.contextmanager
+def redirect_output(fd=None):
+    """
+    Redirect output to the given file descriptor.
+
+    If not file descriptor is given, creates a StringIO().
+    """
+    fd = io.StringIO() if fd is None else fd
+    with redirect_stdout(fd):
+        with redirect_stderr(fd):
+            yield fd

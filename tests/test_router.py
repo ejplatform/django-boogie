@@ -1,7 +1,11 @@
 from collections import defaultdict
 
+import pytest
+from pytest import raises
+
 from boogie.router import Router
 from boogie.testing.pytest import UrlTester, CrawlerTester
+from boogie.utils.text import redirect_output
 
 
 class TestRouter:
@@ -36,17 +40,49 @@ class TestRouter:
 
 
 class TestAppUrlTester(UrlTester):
-    urls = {
+    paths = {
         None: [
             '/hello/',
             '/hello-simple/',
             '/hello/foo/',
         ],
         'user': [],
+        'author': [],
+        'admin': [],
     }
 
 
+class TestAppUrlTesterFailure(UrlTester):
+    paths = {
+        None: [
+            '/invalid/',
+            '/bad/',
+        ],
+        'user': [],
+    }
+
+    def make_user(self, name, email, **kwargs):
+        if name == 'admin':
+            raise ValueError(name, email)
+        return super().make_user(name, email, **kwargs)
+
+    def test_fails_to_make_admin(self, request):
+        with raises(ValueError):
+            request.getfixturevalue('admin')
+
+    @pytest.mark.django_db
+    def test_urls(self, request, client, data):
+        with raises(AssertionError) as exc:
+            with redirect_output() as out:
+                super().test_urls(request, client, data)
+        assert out.getvalue() == (
+            'Error fetching /invalid/, invalid response: 404\n'
+            'Error fetching /bad/, invalid response: 404\n'
+        )
+        assert str(exc.value) == "errors found: ['/bad/', '/invalid/']"
+
+
 class TestUrlCrawl(CrawlerTester):
-    root = ['/links/']
+    start = ['/links/']
     user = 'user'
     must_visit = ['/hello/me/']

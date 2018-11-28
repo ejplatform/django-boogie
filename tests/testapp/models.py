@@ -26,6 +26,9 @@ class Book(models.Model):
     title = models.CharField(max_length=100)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f'{self.title} ({self.author})'
+
 
 @models.queryset_method(Book)
 def at_beginning(qs):

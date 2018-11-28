@@ -5,10 +5,11 @@ LOGIN_REGEX = r'^/login/*.$'
 
 class UrlChecker:
     """
-    Base test class that checks the response code for specific urls in an app.
+    Checks the response code for specific urls in an app.
     """
 
-    def __init__(self, urls=None, posts=None, login_regex=LOGIN_REGEX, client=None):
+    def __init__(self, urls, posts,
+                 login_regex=LOGIN_REGEX, client=None):
         self.client = client or Client()
         self.urls = urls or {}
         self.posts = posts or {}
@@ -17,15 +18,13 @@ class UrlChecker:
     #
     # Get errors from a URL list
     #
-    def find_errors(self, url, code):
+    def get_error(self, url, code):
         """
         Check if client responds to given url with the provided status code.
         """
         response = self.client.get(url)
         if response.status_code not in code:
-            return {url: response}
-        else:
-            return {}
+            return url, response
 
     def get_url_codes(self, url, default):
         """
@@ -34,18 +33,23 @@ class UrlChecker:
         """
         if isinstance(url, str):
             return url, default
-        else:
+        elif isinstance(url, tuple):
             url, codes = url
             return url, codes
+        else:
+            raise TypeError(f'invalid url spec: {url} ({type(url).__name__})')
 
-    def get_url_errors(self, urls, default_codes) -> dict:
+    def collect_errors(self, urls, default_codes) -> dict:
         """
-        Return a mapping with errors without changing the client state.
+        Return a mapping from url to their respective errors without changing
+        the client login state.
         """
         errors = {}
         for url in urls:
             url, codes = self.get_url_codes(url, default_codes)
-            errors.update(self.find_errors(url, codes))
+            error = self.get_error(url, codes)
+            if error is not None:
+                errors.update([error])
         return errors
 
     def check_public_urls(self, urls) -> dict:
@@ -54,7 +58,7 @@ class UrlChecker:
         occurs.
         """
         self.client.logout()
-        return self.get_url_errors(urls, (200, 301, 302))
+        return self.collect_errors(urls, (200, 301, 302))
 
     def check_user_access(self, urls, user) -> dict:
         """
@@ -62,7 +66,7 @@ class UrlChecker:
         occurs.
         """
         self.client.force_login(user)
-        return self.get_url_errors(urls, (200, 301, 302))
+        return self.collect_errors(urls, (200, 301, 302))
 
     def check_login_required(self, urls) -> dict:
         """
@@ -75,7 +79,7 @@ class UrlChecker:
         urls = []
         for url_list in url_map.values():
             urls.extend(url_list)
-        return self.get_url_errors(urls, (302, 404))
+        return self.collect_errors(urls, (302, 404))
 
     def check_restricted_pages(self, urls, user) -> dict:
         """
@@ -83,7 +87,7 @@ class UrlChecker:
         grant unwanted access to resources.
         """
         self.client.force_login(user)
-        return self.get_url_errors(urls, (302, 404))
+        return self.collect_errors(urls, (302, 404))
 
     def check_url_errors(self, users: dict) -> dict:
         """
@@ -95,7 +99,7 @@ class UrlChecker:
         # Public urls
         errors.update(self.check_public_urls(urls.pop(None, ())))
 
-        # Test for each user
+        # Test each user
         for name, url_list in urls.items():
             user = users[name]
             errors.update(self.check_user_access(url_list, user))
@@ -107,9 +111,9 @@ class UrlChecker:
         if 'user' in users:
             user = users['user']
             url_list = []
-            for user, user_list in users.items():
-                if user not in (None, 'user'):
-                    url_list.append(url_list)
+            for other_user, other_urls in urls.items():
+                if other_user not in (None, 'user'):
+                    url_list.extend(other_urls)
             if url_list:
                 errors.update(self.check_restricted_pages(url_list, user))
 

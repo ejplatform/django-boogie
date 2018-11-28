@@ -1,7 +1,10 @@
-from functools import lru_cache
+import copy
+from itertools import chain
 
 import pytest
+from _pytest.fixtures import FixtureLookupError
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.http import Http404
 from django.urls import resolve
@@ -15,32 +18,30 @@ User = get_user_model()
 
 
 #
-# URL Tester
+# Fixture classes
 #
-class URLTesterMeta(type):
+class UserFixtures:
     """
-    Metaclass for UrlTester.
-    """
+    Create the anonymous, user, author and admin fixtures:
 
-    def __new__(mcs, name, bases, namespace, base=False):
-        not_none = (lambda x: x is not None)
-        users = tuple(sorted({
-            *filter(not_none, namespace.get('urls', {}).keys()),
-            *filter(not_none, namespace.get('posts', {}).keys()),
-        }))
-        if not base:
-            namespace['test_urls'] = make_test_urls(users)
-        return type.__new__(mcs, name, bases, namespace)
+    anonymous:
+        An anonymous user.
+    user:
+        Represents regular user with no special privileges on the platform.
+    author:
+        Another regular user, but we assume it to be the owner of some
+        specific resource. A test scenario may create an ``user``, an ``author``
+        and some page with ``page.owner = author``
+    admin:
+        A user with superuser permissions.
 
-
-class UrlTester(metaclass=URLTesterMeta, base=True):
-    """
-    Base class for tests.
+    For each user, it creates a corresponding client_<user> fixture that
+    initializes a client logged in with the given user.
     """
 
     @pytest.fixture
-    def data(self):
-        return None
+    def anonymous(self, db):
+        return AnonymousUser()
 
     @pytest.fixture
     def user(self, db):
@@ -55,12 +56,187 @@ class UrlTester(metaclass=URLTesterMeta, base=True):
         return self.make_user('admin', email='admin@admin.com',
                               is_superuser=True, is_staff=True)
 
-    def make_user(self, *args, **kwargs):
-        return User.objects.create_user(*args, **kwargs)
+    @pytest.fixture
+    def client(self, db):
+        """Standard test client"""
+        return Client()
 
-    urls = {}
-    posts = {}
-    login_regex = LOGIN_REGEX
+    @pytest.fixture
+    def user_client(self, db, client, user):
+        """Client logged in as 'user'"""
+        return self._with_login(client, user)
+
+    @pytest.fixture
+    def author_client(self, db, client, author):
+        """Client logged in as 'author'"""
+        return self._with_login(client, author)
+
+    @pytest.fixture
+    def admin_client(self, db, client, admin):
+        """Client logged in as 'admin'"""
+        assert admin.is_staff, f'User {admin} does not have staff privileges'
+        assert admin.is_superuser, f'User {admin} does not have superuser privileges'
+        return self._with_login(client, admin)
+
+    def _with_login(self, client, user):
+        # We create a copy because we don't want to share state between the
+        # different client fixtures.
+        client = copy.copy(client)
+        client.force_login(user)
+        return client
+
+    def make_user(self, name, email, is_superuser=False, is_staff=False,
+                  **kwargs):
+        """
+        Creates a new user.
+
+        Subclasses may override this function and it must accept the following
+        arguments.
+
+        Args:
+            name:
+                Fixture name for the user.
+            email:
+                User's e-mail.
+            is_staff, is_superuser (bool):
+                Tells if user can access the admin interface (staff) or is a
+                sysadmin (superuser).
+        """
+        model = get_user_model()
+        kwargs.update(is_superuser=is_superuser, is_staff=is_staff, email=email)
+        return model.objects.create_user(name, **kwargs)
+
+
+#
+# URL Tester
+#
+class UrlTester(UserFixtures):
+    """
+    Test if users can access all paths in the "paths" attribute with a
+    successful HTTP status code.
+
+    Most of the logic for this class is implemented by
+    :class:`boogie.testing.urlchecker.URLChecker` class.
+
+    Examples:
+
+        A UrlTester subclass must define the following (optional) attributes:
+
+        .. code-block:: python
+
+            class TestSomeAppUrls(UrlTester):
+                # "paths" is a dictionary describing which paths can be
+                # accessed by each user. Remember always using absolute paths.
+                paths = {
+                    # Use None to specify URLs that can be accessed by
+                    # anonymous users.
+                    None: [
+                        '/some-app/',
+                        '/some-app/url-a/',
+                        '/some-app/url-b.json',
+                    ],
+
+                    # Other users are specified by strings which, during
+                    # testing, are interpreted as fixture names.
+                    'user': [
+                        '/some-app/private/',
+                        '/some-app/private-2/',
+                    ],
+
+                    # The list of paths is cumulative, i.e., "admin" inherits
+                    # all URLs from "user", which inherits all URLs from None.
+                    'admin': [
+                        '/some-app/admin-panel/,
+                        '/some-app/super-secret/,
+                    ],
+                }
+
+                # The post_paths attr behaves similarly to paths, but specify
+                # some payload data which is sent with a POST request.
+                post_paths : {
+                    None: {
+                        '/some-app/form/: {
+                            'name': 'Someone',
+                            'email': 'some@email.com',
+                        },
+                    },
+
+                    # Like paths, it re-uses entries associated with the
+                    # previous fixtures. However, if a URL is repeated,
+                    # it overrides the POST data.
+                    'user': {
+                        '/some-app/form/: {
+                            'name': 'user',
+                            'email': 'user@user.com',
+                        },
+                    },
+
+                    # Append some unique #anchor to the path string to re-use
+                    # the path of a previous user and include a new test data.
+                    'admin': {
+                        '/some-app/form/#admin: {
+                            'name': 'admin',
+                            'email': 'user@user.com',
+                        },
+                    },
+                }
+
+                # The URL tester will load a class scoped "data" fixture, if
+                # available. This can be used to populate the database with
+                # additional models necessary for the test to complete.
+                @pytest.fixture
+                def data(self, db):
+                    models.Model1.objects.create(...)
+                    models.Model2.objects.create(...)
+
+
+                # Each user corresponds to a fixture in the database. We
+                # automatically try to create a "user", "author" and "admin"
+                # users. Of course you may want/need to personalize the creation
+                # of those fixtures if you want.
+                @pytest.fixture
+                def user(self, db):
+                    # The default user is created with the following command.
+                    # The other fixtures follow a similar pattern.
+                    return self.make_user('user', email='user@user.com')
+    """
+
+    paths: dict = {}
+    post_paths: dict = {}
+    login_regex: str = LOGIN_REGEX
+    url_checker = _UrlChecker
+
+    @pytest.fixture
+    def data(self):
+        return None
+
+    @pytest.fixture
+    def client(self, db):
+        return Client()
+
+    @pytest.mark.django_db
+    def test_urls(self, request, client, data):
+        """
+        Implements the logic used by the dynamic test_urls class.
+        """
+        users = self.get_user_fixtures(request)
+        kwargs = {'login_regex': self.login_regex, 'client': client}
+        checker = self.url_checker(self.paths, self.post_paths, **kwargs)
+        errors = checker.check_url_errors(users=users)
+        if errors:
+            for url, value in errors.items():
+                code = value.status_code
+                print(f'Error fetching {url}, invalid response: {code}')
+            raise AssertionError(f'errors found: {sorted(errors)}')
+
+    def get_user_fixtures(self, request):
+        """
+        Creates a dictionary mapping names of user fixtures to their respective
+        values.
+        """
+        users = set(chain(self.paths, self.post_paths))
+        users.discard(None)
+        return {user: request.getfixturevalue(user) for user in users}
 
 
 #
@@ -72,9 +248,8 @@ class CrawlerTester:
 
     Can be configured by overriding the following attributes:
 
-        bases (list of urls):
-            List of (url, user) pairs used as the starting points of web
-            crawling.
+        start (path or list of paths):
+            A url or a list of urls used as the starting points for the crawler.
         skip (list of urls):
             URLs that should be skipped during testing. The crawler will never
             visit those URLs unless they are a starting url in bases.
@@ -86,7 +261,7 @@ class CrawlerTester:
             Name of user instance fixture.
     """
 
-    root = '/'
+    start = '/'
     user = 'user'
     skip = ()
     xfail = ()
@@ -109,11 +284,11 @@ class CrawlerTester:
         """
         errors = {}
         user = conf['user']
-        root = self.root
-        if isinstance(root, str):
-            root = [root]
+        start = self.start
+        if isinstance(start, str):
+            start = [start]
 
-        for url in root:
+        for url in start:
             try:
                 check_link_errors(
                     url, visit=self.must_visit, skip=self.skip,
@@ -130,23 +305,45 @@ class CrawlerTester:
 #
 class ModelTester:
     """
-    A helper class that makes it easier for testing models.
+    Perform some standard test on a given model
+
+    This class assumes the presence of an "instance" fixture that creates an
+    exemplary of the model class.
+
+    Attributes:
+        model (model class):
+            The model class that to be tested.
+        representation (str):
+            Expected value of str(instance)
+        absolute_url:
+            Expected value of instance.get_absolute_url()
     """
     model: type
     representation: str
-    fixture_name: str
     absolute_url: str
     db = False
 
     @pytest.fixture
     def instance(self, request):
-        if not hasattr(self, 'fixture_name'):
-            name = snake_case(self.model.__name__)
-        else:
-            name = self.fixture_name
+        model_name = snake_case(self.model.__name__)
+        name = getattr(self, 'instance_fixture', model_name)
         if self.db:
             request.getfixturevalue('db')
-        return request.getfixturevalue(name)
+        try:
+            return request.getfixturevalue(name)
+        except FixtureLookupError:
+            return self.get_instance()
+
+    def get_instance(self):
+        """
+        Fallback method that is executed when the instance or model fixtures are
+        not defined.
+        """
+        model_name = snake_case(self.model.__name__)
+        raise ImproperlyConfigured(
+            f'please either define an "instance" or "{model_name}"\n'
+            f'fixture in your class or implement the "get_instance" method'
+        )
 
     def get_examples(self):
         """
@@ -166,9 +363,13 @@ class ModelTester:
         self.check_improperly_configured(instance)
 
         # Check representation
-        assert str(instance) == self.representation
+        got = str(instance)
+        expect = self.representation
+        if expect != got:
+            msg = 'invalid representation: expect: %r, got: %r'
+            raise AssertionError(msg % (expect, got))
 
-        # Check absolute url
+            # Check absolute url
         if hasattr(model, 'get_absolute_url'):
             assert instance.get_absolute_url() == self.absolute_url
             try:
@@ -206,42 +407,9 @@ class ModelTester:
 
 
 #
-# Fixtures
+# Utility
 #
-@pytest.fixture
-def client(db):
-    """Standard test client"""
-    return Client()
 
-
-@pytest.fixture
-def user_client(db, user):
-    """Client logged in as 'user'"""
-    client = Client()
-    client.force_login(user)
-    return client
-
-
-@pytest.fixture
-def admin_client(db, admin):
-    """Client logged in as 'admin'"""
-    client = Client()
-    client.force_login(admin)
-    assert admin.is_staff, f'User {admin} does not have staff privileges'
-    return client
-
-
-@pytest.fixture
-def author_client(db, author):
-    """Client logged in as 'author'"""
-    client = Client()
-    client.force_login(author)
-    return client
-
-
-#
-# Utilities
-#
 def make_test_class(model_tester, instance):
     """
     Return a string with a plausible source code representation for a
@@ -258,40 +426,3 @@ def make_test_class(model_tester, instance):
     if hasattr(instance, 'get_absolute_url'):
         base += '\n        absolute_url = {instance.get_absolute_url()!r}'
     return base
-
-
-@lru_cache(32)
-def make_test_urls(users):
-    """
-    Create the test_urls() function for the given list of users.
-
-    Users are passed to function as fixtures.
-    """
-    inputs = ', '.join(['data', 'db', 'client', *users])
-    src = (
-        f'def test_urls(self, {inputs}):\n'
-        f'    check_urls_from_locals(locals())'
-    )
-
-    # Eval code and fetch result
-    ns = {}
-    exec(src, {'check_urls_from_locals': check_urls_from_locals}, ns)
-    return ns['test_urls']
-
-
-def check_urls_from_locals(variables):
-    """
-    Implements the logic used by the dynamic test_urls class.
-    """
-    self = variables.pop('self')
-    variables.pop('data')
-    variables.pop('db')
-    client = variables.pop('client')
-    checker = _UrlChecker(self.urls, self.posts,
-                          self.login_regex, client=client)
-    errors = checker.check_url_errors(users=variables)
-    if errors:
-        for url, value in errors.items():
-            code = value.status_code
-            print(f'Error fetching {url}: got status code {code}')
-        raise AssertionError(f'errors found at given urls: {list(errors)}')
