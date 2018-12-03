@@ -76,8 +76,8 @@ class TestAppUrlTesterFailure(UrlTester):
             with redirect_output() as out:
                 super().test_urls(request, client, data)
         assert out.getvalue() == (
-            'Error fetching /invalid/, invalid response: 404\n'
-            'Error fetching /bad/, invalid response: 404\n'
+            'Error fetching /invalid/, invalid get_response: 404\n'
+            'Error fetching /bad/, invalid get_response: 404\n'
         )
         assert str(exc.value) == "errors found: ['/bad/', '/invalid/']"
 
