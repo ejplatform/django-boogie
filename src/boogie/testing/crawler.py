@@ -10,17 +10,19 @@ cte = (lambda x: lambda *args: x)
 choose = (lambda cond, do, other: do if cond else other)
 
 
-def crawl(url='/', skip=(), errors=(), user=None, log=print):
+def crawl(url='/', skip_patterns=(), skip_urls=(), errors=(), user=None, log=print):
     """
     Crawl website starting from the given base url and return a dictionary with
     all pages with invalid status codes (e.g. 404, 500, etc)
 
     Args:
-        url (str):
-            Starting url.
-        skip (list of regex strings):
+        url (str or list):
+            Starting url or lists of URLs.
+        skip_patterns (list of regex strings):
             List of regular expressions with patterns that should be
             skip even if a hyperlink is found in the webpage.
+        skip_urls (list or strings):
+            List of URLs that should be skip.
         errors (list of regex strings):
             List of regular expressions that match links that should be
             considered instant errors.
@@ -36,15 +38,19 @@ def crawl(url='/', skip=(), errors=(), user=None, log=print):
         client.force_login(user)
 
     # Control urls that should be included/excluded from analysis
-    skip_re = re.compile('|'.join(skip))
+    skip_urls = set(skip_urls)
+    skip_match = re.compile('|'.join(skip_patterns)).match
     errors_re = re.compile('|'.join(errors))
-    keep = choose(skip, lambda x: not skip_re.match(x), cte(True))
+    keep = choose(skip_patterns or skip_urls,
+                  lambda x: (x not in skip_urls) and (not skip_match(x)),
+                  cte(True))
     is_error = choose(errors, lambda x: errors_re.match(x), cte(False))
     log = log or cte(None)
 
     # Accumulation variables
     visited = {}
-    pending = deque([url])
+    pending = deque([url] if isinstance(url, str) else url)
+    referrals = {}
     errors = {}
 
     while pending:
@@ -60,13 +66,15 @@ def crawl(url='/', skip=(), errors=(), user=None, log=print):
         if code == 200:
             text = response.content.decode(response.charset)
             links = find_urls(text, url)
-            pending.extend(filter(keep, links))
+            links = list(filter(keep, links))
+            referrals.update((link, url) for link in links)
+            pending.extend(links)
             errors.update((x, url) for x in links if is_error(x))
 
         elif code in (301, 302):
             pending.append(response.url)
         else:
-            errors[url] = code
+            errors[url] = referrals.get(url, '') + f' (status code: {code})'
 
     return errors, visited
 

@@ -5,7 +5,7 @@ LOGIN_REGEX = r'^/login/*.$'
 
 class UrlChecker:
     """
-    Checks the response code for specific urls in an app.
+    Checks the get_response code for specific urls in an app.
     """
 
     def __init__(self, urls, posts,

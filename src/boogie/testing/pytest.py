@@ -153,7 +153,7 @@ class UrlTester(UserFixtures):
 
                 # The post_paths attr behaves similarly to paths, but specify
                 # some payload data which is sent with a POST request.
-                post_paths : {
+                post_paths = {
                     None: {
                         '/some-app/form/: {
                             'name': 'Someone',
@@ -226,7 +226,7 @@ class UrlTester(UserFixtures):
         if errors:
             for url, value in errors.items():
                 code = value.status_code
-                print(f'Error fetching {url}, invalid response: {code}')
+                print(f'Error fetching {url}, invalid get_response: {code}')
             raise AssertionError(f'errors found: {sorted(errors)}')
 
     def get_user_fixtures(self, request):
@@ -263,25 +263,27 @@ class CrawlerTester:
 
     start = '/'
     user = 'user'
-    skip = ()
+    skip_patterns = ()
+    skip_urls = ()
     xfail = ()
     must_visit = ()
     log = print
     error_class = AssertionError
 
     @pytest.fixture
-    def data(self):
-        return {None: None}
-
-    @pytest.fixture
     def conf(self, request):
         return {'user': request.getfixturevalue('user')}
 
     @pytest.mark.django_db
-    def test_reaches_all_urls(self, data, conf):
+    def test_reaches_all_urls(self, request, conf):
         """
         Test if it fails in some view when crawling from a starting URL.
         """
+        try:
+            request.getfixturevalue('data')
+        except FixtureLookupError:
+            pass
+
         errors = {}
         user = conf['user']
         start = self.start
@@ -291,8 +293,9 @@ class CrawlerTester:
         for url in start:
             try:
                 check_link_errors(
-                    url, visit=self.must_visit, skip=self.skip,
-                    errors=self.xfail, user=user, log=self.log,
+                    url, visit=self.must_visit, errors=self.xfail, user=user,
+                    skip_patterns=self.skip_patterns, skip_urls=self.skip_urls,
+                    log=self.log,
                 )
             except AssertionError as ex:
                 errors.update(ex.args[0])
