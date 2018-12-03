@@ -9,11 +9,15 @@ class Db:
     def __getattr__(self, attr):
         if self._app is None:
             return Db(attr)
-        else:
+        elif attr.endswith('_model'):
             from django.apps import apps
-
-            model = apps.get_model(self._app, attr)
+            return apps.get_model(self._app, attr[:-6])
+        elif attr.endswith('_objects'):
+            from django.apps import apps
+            model = apps.get_model(self._app, attr[:-8])
             return wrap_as_boogie_manager(model._default_manager)
+        elif attr.endswith('s'):
+            return self.__getattr__(attr[:-1] + '_objects')
 
 
 db = Db()
