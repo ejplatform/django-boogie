@@ -69,8 +69,9 @@ class EnumMeta(enum.EnumMeta):
         for attr, descr in zip(names, descriptions):
             setattr(cls, attr + '_DESCRIPTION', descr)
             case = getattr(cls, attr)
-            case.description = str(descr)
-            cls._descriptions[case] = str(descr)
+            case._description = descr
+            cls._descriptions[case] = descr
+            cls.description = property(lambda x: str(x._description))
 
     def __hash__(cls):  # noqa: N805
         return id(cls)
@@ -98,6 +99,23 @@ class IntEnum(enum.IntEnum,
         ...     TEACHER = 0, 'teacher'
         ...     STUDENT = 1, 'student'
     """
+
+    @classmethod
+    def normalize(cls, obj):
+        """
+        Normalize enumeration that can be passed as value or a string argument.
+        """
+        if isinstance(obj, cls):
+            return obj
+        elif isinstance(obj, str):
+            value = getattr(cls, obj.upper(), None)
+            if value is None:
+                raise ValueError(f'invalid {cls.__name__}: {obj}')
+            return value
+        elif isinstance(obj, int):
+            return cls(obj)
+        else:
+            raise TypeError(type(obj))
 
 
 class Enum(enum.Enum, metaclass=EnumMeta):
