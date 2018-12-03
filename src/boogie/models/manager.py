@@ -1,11 +1,12 @@
 from django.db import models
+from django.db.models.manager import BaseManager
 from sidekick import delegate_to
 
 from .methodregistry import get_manager_attribute
 from .queryset import QuerySet
 
 
-class Manager(models.Manager):
+class Manager(models.Manager, BaseManager):
     """
     Default Boogie manager.
     """
@@ -39,7 +40,10 @@ class Manager(models.Manager):
         return self.get_queryset().__setitem__(item, value)
 
     def __getattr__(self, attr):
-        return get_manager_attribute(self, attr)
+        value = get_manager_attribute(self, attr)
+        if value is NotImplemented:
+            raise AttributeError(attr)
+        return value
 
     def get_queryset(self):
         return self._queryset_class(model=self.model, using=self._db, hints=self._hints)

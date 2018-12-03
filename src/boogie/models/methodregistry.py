@@ -58,7 +58,7 @@ def get_attribute(qs, attr, registry):
     """
 
     if attr.startswith('_'):
-        raise AttributeError(attr)
+        return NotImplemented
 
     model = qs.model
     try:
@@ -76,8 +76,7 @@ def get_attribute(qs, attr, registry):
                 continue
             registry[(model, attr)] = method
             return get_descriptor(method, qs)
-    else:
-        raise AttributeError(attr)
+    return NotImplemented
 
 
 def get_descriptor(descriptor, instance):

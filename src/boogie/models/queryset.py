@@ -19,7 +19,7 @@ F_EXPR_TYPE = type(F.some_attr > 0)
 pd = import_later('pandas')
 
 
-# noinspection PyProtectedMember
+# noinspection PyProtectedMember,PyUnresolvedReferences
 class QuerySet(models.QuerySet):
     """
     Boogie's drop in replacement to Django's query sets.
@@ -88,9 +88,11 @@ class QuerySet(models.QuerySet):
         return setitem_2d(self, row, col, value)
 
     def __getattr__(self, attr):
-        return get_queryset_attribute(self, attr)
+        value = get_queryset_attribute(self, attr)
+        if value is NotImplemented:
+            raise AttributeError(attr)
+        return value
 
-    # Better accessors
     def update_item(self, pk, **kwargs):
         """
         Updates a single item in the queryset.
@@ -149,7 +151,8 @@ class QuerySet(models.QuerySet):
     #
     # Pandas data frame and numpy array APIs
     #
-    def dataframe(self, *fields, index=None, verbose=False):
+    def dataframe(self, *fields, index=None, verbose=False) \
+            -> 'pandas.DataFrame':  # noqa: F821
         """
         Convert query set to a Pandas data frame.
 
@@ -207,6 +210,11 @@ class QuerySet(models.QuerySet):
 
         """
         df = self.dataframe(index, columns, values, verbose=verbose)
+        if df.shape[0] == 0:
+            dtype = float if fill_value is None else type(fill_value)
+            df = pd.DataFrame(dtype=dtype, index=pd.Index([], dtype=int))
+            df.index.name = index
+            return df
         return df.pivot_table(index=index, columns=columns, values=values,
                               dropna=dropna, fill_value=fill_value)
 
@@ -247,9 +255,16 @@ class QuerySet(models.QuerySet):
         Returns a copy of dataframe that includes columns computed from the
         given fields.
         """
-        return df.append(
-            self.filter(pk__in=df.index)
+        extra = \
+            (self
+                .filter(pk__in=set(df.index))
+                .distinct()
                 .dataframe(*fields, verbose=verbose))
+        extra.index.name = df.index.name
+        new = pd.DataFrame(df)
+        for k, v in extra.items():
+            new[k] = v
+        return new
 
     #
     # Selecting parts of the dataframe
