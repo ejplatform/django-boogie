@@ -12,8 +12,7 @@ class UserQuerySet(models.QuerySet):
     """
 
 
-class UserManager(models.Manager,
-                  auth.UserManager.from_queryset(UserQuerySet)):
+class UserManager(auth.UserManager.from_queryset(UserQuerySet), models.Manager):
     """
     Base manager for Boogie users.
     """
