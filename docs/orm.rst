@@ -166,7 +166,7 @@ for all models in your project.
 .. ignore-next-block
 
 >>> from boogie import db
->>> db.auth.user[:, 'name']
+>>> db.auth.user_model[:, 'name']
 <QuerySet ['John Lennon', 'Paul McCartney', 'George Harrison', 'Ringo Star']>
 
 It must be used with the ``db.<app_label>.<model_name>`` syntax. Under the hood, the db

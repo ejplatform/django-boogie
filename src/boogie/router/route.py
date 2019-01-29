@@ -143,7 +143,7 @@ class Route(ModelLookupMixin):
 
     def prepare_response(self, result, request):
         """
-        Return a Django get_response object from the result of the supplied view
+        Return a Django response object from the result of the supplied view
         function.
         """
         # Regular http responses

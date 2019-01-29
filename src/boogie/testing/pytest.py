@@ -226,7 +226,7 @@ class UrlTester(UserFixtures):
         if errors:
             for url, value in errors.items():
                 code = value.status_code
-                print(f'Error fetching {url}, invalid get_response: {code}')
+                print(f'Error fetching {url}, invalid response: {code}')
             raise AssertionError(f'errors found: {sorted(errors)}')
 
     def get_user_fixtures(self, request):
