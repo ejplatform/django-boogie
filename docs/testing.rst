@@ -40,7 +40,7 @@ pages in your web site looking for broken links and invalid responses.
 
     # Now we repeat the same tests, but with a different user fixture.
     class TestUserUrls(TestPublicUrls):
-        must_visit = ('/profile/', '/logout/')
+        must_visit = ('/profile/', '/account/logout/')
 
         @pytest.fixture
         def user(self, db):

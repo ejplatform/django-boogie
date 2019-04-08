@@ -1,6 +1,8 @@
-import pandas as pd
+from sidekick import import_later
 
 from boogie.models import F
+
+pd = import_later('pandas')
 
 
 class TestQuerySetIndexing:
