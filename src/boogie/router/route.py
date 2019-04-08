@@ -123,7 +123,7 @@ class Route(ModelLookupMixin):
         # use Django's standard @permission_required() mechanism.
         if isinstance(perms, str):
             perms = [perms]
-        complex, simple = sk.partition_at(lambda x: ":" in x, perms or ())
+        complex, simple = sk.separate(lambda x: ":" in x, perms or ())
         self._simple_perms = tuple(simple)
 
         # Create a tuple of (obj, [list of perms]) for
@@ -132,7 +132,7 @@ class Route(ModelLookupMixin):
             perm, _, obj = full_perm.partition(":")
 
             # Check if any object permissions were defined inconsistently
-            if obj and obj not in self.models:
+            if obj not in self.models:
                 raise ImproperlyConfigured(
                     f"invalid permission detected: {obj!r} object is required in \n"
                     f"{full_perm!r} permission, but it is not registered in this "
