@@ -132,7 +132,7 @@ class Route(ModelLookupMixin):
             perm, _, obj = full_perm.partition(":")
 
             # Check if any object permissions were defined inconsistently
-            if obj not in self.models:
+            if obj and obj not in self.models:
                 raise ImproperlyConfigured(
                     f"invalid permission detected: {obj!r} object is required in \n"
                     f"{full_perm!r} permission, but it is not registered in this "
