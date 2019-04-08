@@ -9,15 +9,15 @@ class EnvironmentConf(Conf):
     Base class for Django configurations. Users should use DjangoConf
     """
 
-    env_prefix = 'DJANGO_'
+    env_prefix = "DJANGO_"
 
-    def get_environment(self, env='local'):
+    def get_environment(self, env="local"):
         """
         Django base environment. We suggest distinguishing between 'local',
         'test' and 'production'.
         """
-        if env not in ['test', 'production', 'local']:
-            raise ImproperlyConfigured(f'Invalid environment: {env}')
+        if env not in ["test", "production", "local"]:
+            raise ImproperlyConfigured(f"Invalid environment: {env}")
         return env
 
     @env_settings(type=bool, default=None)
@@ -26,12 +26,12 @@ class EnvironmentConf(Conf):
         By default, debug is enabled only on 'local' and 'test' environments.
         """
         if env is None:
-            return self.ENVIRONMENT == 'local'
+            return self.ENVIRONMENT == "local"
         return env
 
     @env_default()
     def get_wsgi_application(self):
-        return self.DJANGO_PROJECT_PATH + '.wsgi.application'
+        return self.DJANGO_PROJECT_PATH + ".wsgi.application"
 
     @env_default()
     def get_site_id(self):
@@ -48,4 +48,4 @@ class EnvironmentConf(Conf):
         return True
 
     def get_auth_user_model(self):
-        return 'auth.User'
+        return "auth.User"

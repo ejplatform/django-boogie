@@ -12,17 +12,19 @@ from .templates import TemplatesConf
 from .urls import UrlsConf
 
 
-class DjangoConf(SecurityConf,
-                 TemplatesConf,
-                 UrlsConf,
-                 MiddlewareConf,
-                 InstalledAppsConf,
-                 LoggingConf,
-                 LocaleConf,
-                 DatabaseConf,
-                 ServicesConf,
-                 PathsConf,
-                 EnvironmentConf):
+class DjangoConf(
+    SecurityConf,
+    TemplatesConf,
+    UrlsConf,
+    MiddlewareConf,
+    InstalledAppsConf,
+    LoggingConf,
+    LocaleConf,
+    DatabaseConf,
+    ServicesConf,
+    PathsConf,
+    EnvironmentConf,
+):
     """
     Base configuration class for Django-based projects.
     """

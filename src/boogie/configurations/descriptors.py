@@ -3,7 +3,7 @@ from pathlib import Path
 
 import environ
 
-path_type = type(Path('path'))
+path_type = type(Path("path"))
 
 
 def env(default, type=None, name=None, **kwargs):
@@ -68,13 +68,13 @@ def env_settings(**kwargs):
         type:
             Type (str, int, float, bool, etc).
     """
-    valid_kwargs = {'name', 'type', 'default'}
+    valid_kwargs = {"name", "type", "default"}
 
     def decorator(func):
         for k, v in kwargs.items():
             if k not in valid_kwargs:
-                raise TypeError(f'invalid argument: {k}')
-            setattr(func, f'env_{k}', v)
+                raise TypeError(f"invalid argument: {k}")
+            setattr(func, f"env_{k}", v)
         return func
 
     return decorator
@@ -87,9 +87,9 @@ def env_default(**options):
     not_given = object()
 
     def decorator(func):
-        name = getattr(func, 'env_name', func.__name__)
-        type = getattr(func, 'env_type', str)
-        default = getattr(func, 'env_default', not_given)
+        name = getattr(func, "env_name", func.__name__)
+        type = getattr(func, "env_type", str)
+        default = getattr(func, "env_default", not_given)
 
         @functools.wraps(func)
         def decorated(self):
@@ -106,22 +106,21 @@ def env_default(**options):
 class EnvDescriptor:
     METHOD_MAPPER = {
         # Basic Python types
-        str: 'str',
-        bool: 'bool',
-        float: 'float',
-        int: 'int',
-        list: 'list',
-        tuple: 'tuple',
-        dict: 'dict',
-        path_type: 'str',
-
+        str: "str",
+        bool: "bool",
+        float: "float",
+        int: "int",
+        list: "list",
+        tuple: "tuple",
+        dict: "dict",
+        path_type: "str",
         # Special methods
-        'json': 'json',
-        'path': 'path',
-        'db_url': 'db_url',
-        'cache_url': 'cache_url',
-        'search_url': 'search_url',
-        'email_url': 'email_url',
+        "json": "json",
+        "path": "path",
+        "db_url": "db_url",
+        "cache_url": "cache_url",
+        "search_url": "search_url",
+        "email_url": "email_url",
     }
 
     def __init__(self, default, type=None, name=None, **kwargs):
@@ -132,14 +131,14 @@ class EnvDescriptor:
         if type is None:
             type = default.__class__
         if type not in self.METHOD_MAPPER:
-            raise ValueError(f'invalid type: {type}')
+            raise ValueError(f"invalid type: {type}")
         self.type = type
 
     def __set_name__(self, owner, name):
-        prefix = getattr(owner, 'env_prefix', '')
+        prefix = getattr(owner, "env_prefix", "")
         if self.name is None:
             self.name = prefix + name
-        elif '{' in self.name:
+        elif "{" in self.name:
             self.name = name.format(prefix=prefix, attr=name)
 
     def __get__(self, instance, cls=None):

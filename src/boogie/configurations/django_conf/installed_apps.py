@@ -22,11 +22,18 @@ class InstalledAppsConf(EnvironmentConf):
         The list contains project  apps + thirdy parties + contrib, in that
         order.
         """
-        return list(unique(filter(lambda x: x is not None, [
-            *self.PROJECT_APPS,
-            *self.THIRD_PARTY_APPS,
-            *self.DJANGO_CONTRIB_APPS,
-        ])))
+        return list(
+            unique(
+                filter(
+                    lambda x: x is not None,
+                    [
+                        *self.PROJECT_APPS,
+                        *self.THIRD_PARTY_APPS,
+                        *self.DJANGO_CONTRIB_APPS,
+                    ],
+                )
+            )
+        )
 
     def get_project_apps(self):
         """
@@ -47,14 +54,18 @@ class InstalledAppsConf(EnvironmentConf):
 
         apps = []
         if self.USE_DJANGO_ADMIN:
-            apps.append('django.contrib.admin')
+            apps.append("django.contrib.admin")
         if self.USE_DJANGO_USERS:
-            apps.extend(['django.contrib.auth', 'django.contrib.sessions'])
-        apps.extend(['django.contrib.contenttypes',
-                     'django.contrib.messages',
-                     'django.contrib.sites'])
+            apps.extend(["django.contrib.auth", "django.contrib.sessions"])
+        apps.extend(
+            [
+                "django.contrib.contenttypes",
+                "django.contrib.messages",
+                "django.contrib.sites",
+            ]
+        )
         if self.SERVE_STATIC_FILES:
-            apps.append('django.contrib.staticfiles')
+            apps.append("django.contrib.staticfiles")
         return apps
 
     def with_app(self, app, app_list, deps=None, optdeps=None):
@@ -106,7 +117,7 @@ class InstalledAppsConf(EnvironmentConf):
         the app name followed by all of its dependencies.
         """
         filtered = []
-        is_installed = (lambda dep: importlib.util.find_spec(dep) is not None)
+        is_installed = lambda dep: importlib.util.find_spec(dep) is not None
 
         for app in apps:
             if isinstance(app, (tuple, list)):

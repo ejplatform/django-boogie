@@ -20,9 +20,9 @@ def secret_hash(data):
                 strings.append(str(data))
         except TypeError:
             pass
-    data = ''.join(strings)
-    hash_value = md5(data.encode('utf8')).digest()
-    return base64.b85encode(hash_value).decode('ascii')
+    data = "".join(strings)
+    hash_value = md5(data.encode("utf8")).digest()
+    return base64.b85encode(hash_value).decode("ascii")
 
 
 def module_exists(mod, package=None):

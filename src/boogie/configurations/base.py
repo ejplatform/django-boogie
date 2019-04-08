@@ -9,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .descriptors import Env
 
-log = logging.getLogger('boogie')
+log = logging.getLogger("boogie")
 NOT_GIVEN = object()
 
 
@@ -38,12 +38,12 @@ def save_configuration(conf_class, where=None):
     """
     if where is None:
         try:
-            where = os.environ['DJANGO_SETTINGS_MODULE']
+            where = os.environ["DJANGO_SETTINGS_MODULE"]
         except KeyError:
             raise ImproperlyConfigured(
-                'You must either define the DJANGO_SETTINGS_MODULE environment '
-                'variable or pass an explicit module name to the '
-                'init_configuration function.'
+                "You must either define the DJANGO_SETTINGS_MODULE environment "
+                "variable or pass an explicit module name to the "
+                "init_configuration function."
             )
     if isinstance(where, str):
         where = import_module(where).__dict__
@@ -56,7 +56,7 @@ def save_configuration(conf_class, where=None):
         conf = conf_class()
         where.update(conf.load_settings())
     except Exception as exc:
-        log.error('Error loading configurations: %s' % exc)
+        log.error("Error loading configurations: %s" % exc)
         raise
 
 
@@ -66,7 +66,7 @@ class Conf:
     """
 
     ENVFILE = None
-    env_prefix = ''
+    env_prefix = ""
 
     @classmethod
     def save_settings(cls, where=None):
@@ -82,10 +82,10 @@ class Conf:
         cls = type(self)
         for name, value in kwargs.items():
             attr = name.upper()
-            if hasattr(cls, attr) or hasattr(cls, f'get_{name}'):
+            if hasattr(cls, attr) or hasattr(cls, f"get_{name}"):
                 setattr(self, attr, value)
             else:
-                raise TypeError(f'invalid argument: {attr}')
+                raise TypeError(f"invalid argument: {attr}")
 
     def prepare(self):
         """
@@ -123,16 +123,16 @@ class Conf:
                 for attr in set(with_getter_attributes(dir(self)))
             }
             settings = {k: v for k, v in settings.items() if v is not NOT_GIVEN}
-            if settings.get('ENVFILE') is None:
-                settings.pop('ENVFILE', None)
+            if settings.get("ENVFILE") is None:
+                settings.pop("ENVFILE", None)
             self._settings = self.finalize(settings)
         return dict(self._settings)
 
     def __getattr__(self, attr):
         if attr.isupper():
-            func = getattr(self, f'get_{attr.lower()}', None)
+            func = getattr(self, f"get_{attr.lower()}", None)
             if func is None:
-                raise AttributeError(f'Invalid attribute {attr}')
+                raise AttributeError(f"Invalid attribute {attr}")
             value = get_value(func, self, attr)
             setattr(self, attr, value)
             return value
@@ -155,17 +155,17 @@ def get_value(func, ns, which):
     )
     for name, default in with_default:
         # Skip self
-        if name == 'self':
+        if name == "self":
             continue
 
         # The "env" parameter injects the environment variable associated with
         # the attribute
-        if name == 'env':
+        if name == "env":
             prefix = ns.env_prefix
             attr = which.upper()
-            var_name = getattr(func, 'env_name', f'{prefix}{attr}')
-            type = getattr(func, 'env_type', str)
-            default = getattr(func, 'env_default', default)
+            var_name = getattr(func, "env_name", f"{prefix}{attr}")
+            type = getattr(func, "env_type", str)
+            default = getattr(func, "env_default", default)
             value = ns.env(var_name, type=type, default=default)
             if value is NOT_GIVEN:
                 name = which
@@ -177,7 +177,7 @@ def get_value(func, ns, which):
         # Save variables in dictionary
         if value is NOT_GIVEN:
             var_name = name.upper()
-            msg = f'{which}: configuration must define a {var_name} attribute'
+            msg = f"{which}: configuration must define a {var_name} attribute"
             raise TypeError(msg)
         callargs[name] = value
 
@@ -196,8 +196,8 @@ def args_with_default(names, defaults, fillvalue=None):
 
 def with_getter_attributes(attrs):
     for attr in attrs:
-        if attr.isupper() and not attr.startswith('_'):
+        if attr.isupper() and not attr.startswith("_"):
             yield attr
-        elif attr.startswith('get_'):
+        elif attr.startswith("get_"):
             attr = attr[4:].upper()
             yield attr

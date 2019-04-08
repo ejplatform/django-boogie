@@ -24,7 +24,7 @@ class PathsConf(EnvironmentConf):
         return os.getcwd()
 
     def get_settings_file_path(self):
-        django_settings = os.environ.get('DJANGO_SETTINGS_MODULE', None)
+        django_settings = os.environ.get("DJANGO_SETTINGS_MODULE", None)
         if django_settings:
             spec = importlib.util.find_spec(django_settings)
             return Path(spec.origin)
@@ -33,7 +33,7 @@ class PathsConf(EnvironmentConf):
         settings = self.SETTINGS_FILE_PATH
         if settings:
             return None
-        if settings.name == '__init__.py':
+        if settings.name == "__init__.py":
             settings = settings.parent
         return settings.parent
 
@@ -41,13 +41,13 @@ class PathsConf(EnvironmentConf):
         return get_dir(self)
 
     def get_log_file_path(self):
-        value = self.env('DJANGO_LOG_FILE_PATH', default=None)
+        value = self.env("DJANGO_LOG_FILE_PATH", default=None)
         if value is None:
-            value = self.BASE_DIR / 'logfile.log'
+            value = self.BASE_DIR / "logfile.log"
         return value
 
     def get_django_project_path(self):
-        name, _, _ = os.environ['DJANGO_SETTINGS_MODULE'].rpartition('.')
+        name, _, _ = os.environ["DJANGO_SETTINGS_MODULE"].rpartition(".")
         return name
 
 
@@ -59,7 +59,7 @@ def git_folder(conf):
     if conf.SETTINGS_FILE_PATH:
         paths.append(conf.SETTINGS_FILE_PATH.parent)
 
-    if not conf.__module__.startswith('boogie'):
+    if not conf.__module__.startswith("boogie"):
         spec = importlib.util.find_spec(conf.__module__)
         paths.append(Path(spec.origin).parent)
 
@@ -67,7 +67,7 @@ def git_folder(conf):
 
     for path in paths:
         for subpath in [path, *path.parents]:
-            if (subpath / '.git').exists():
+            if (subpath / ".git").exists():
                 return subpath
 
 
