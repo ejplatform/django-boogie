@@ -45,16 +45,17 @@ class UserFixtures:
 
     @pytest.fixture
     def user(self, db):
-        return self.make_user('user', email='user@user.com')
+        return self.make_user("user", email="user@user.com")
 
     @pytest.fixture
     def author(self, db):
-        return self.make_user('author', email='author@author.com')
+        return self.make_user("author", email="author@author.com")
 
     @pytest.fixture
     def admin(self, db):
-        return self.make_user('admin', email='admin@admin.com',
-                              is_superuser=True, is_staff=True)
+        return self.make_user(
+            "admin", email="admin@admin.com", is_superuser=True, is_staff=True
+        )
 
     @pytest.fixture
     def client(self, db):
@@ -74,8 +75,8 @@ class UserFixtures:
     @pytest.fixture
     def admin_client(self, db, client, admin):
         """Client logged in as 'admin'"""
-        assert admin.is_staff, f'User {admin} does not have staff privileges'
-        assert admin.is_superuser, f'User {admin} does not have superuser privileges'
+        assert admin.is_staff, f"User {admin} does not have staff privileges"
+        assert admin.is_superuser, f"User {admin} does not have superuser privileges"
         return self._with_login(client, admin)
 
     def _with_login(self, client, user):
@@ -85,8 +86,7 @@ class UserFixtures:
         client.force_login(user)
         return client
 
-    def make_user(self, name, email, is_superuser=False, is_staff=False,
-                  **kwargs):
+    def make_user(self, name, email, is_superuser=False, is_staff=False, **kwargs):
         """
         Creates a new user.
 
@@ -220,14 +220,14 @@ class UrlTester(UserFixtures):
         Implements the logic used by the dynamic test_urls class.
         """
         users = self.get_user_fixtures(request)
-        kwargs = {'login_regex': self.login_regex, 'client': client}
+        kwargs = {"login_regex": self.login_regex, "client": client}
         checker = self.url_checker(self.paths, self.post_paths, **kwargs)
         errors = checker.check_url_errors(users=users)
         if errors:
             for url, value in errors.items():
                 code = value.status_code
-                print(f'Error fetching {url}, invalid response: {code}')
-            raise AssertionError(f'errors found: {sorted(errors)}')
+                print(f"Error fetching {url}, invalid response: {code}")
+            raise AssertionError(f"errors found: {sorted(errors)}")
 
     def get_user_fixtures(self, request):
         """
@@ -261,8 +261,8 @@ class CrawlerTester:
             Name of user instance fixture.
     """
 
-    start = '/'
-    user = 'user'
+    start = "/"
+    user = "user"
     skip_patterns = ()
     skip_urls = ()
     xfail = ()
@@ -272,7 +272,7 @@ class CrawlerTester:
 
     @pytest.fixture
     def conf(self, request):
-        return {'user': request.getfixturevalue('user')}
+        return {"user": request.getfixturevalue("user")}
 
     @pytest.mark.django_db
     def test_reaches_all_urls(self, request, conf):
@@ -280,12 +280,12 @@ class CrawlerTester:
         Test if it fails in some view when crawling from a starting URL.
         """
         try:
-            request.getfixturevalue('data')
+            request.getfixturevalue("data")
         except FixtureLookupError:
             pass
 
         errors = {}
-        user = conf['user']
+        user = conf["user"]
         start = self.start
         if isinstance(start, str):
             start = [start]
@@ -293,8 +293,12 @@ class CrawlerTester:
         for url in start:
             try:
                 check_link_errors(
-                    url, visit=self.must_visit, errors=self.xfail, user=user,
-                    skip_patterns=self.skip_patterns, skip_urls=self.skip_urls,
+                    url,
+                    visit=self.must_visit,
+                    errors=self.xfail,
+                    user=user,
+                    skip_patterns=self.skip_patterns,
+                    skip_urls=self.skip_urls,
                     log=self.log,
                 )
             except AssertionError as ex:
@@ -321,6 +325,7 @@ class ModelTester:
         absolute_url:
             Expected value of instance.get_absolute_url()
     """
+
     model: type
     representation: str
     absolute_url: str
@@ -329,9 +334,9 @@ class ModelTester:
     @pytest.fixture
     def instance(self, request):
         model_name = snake_case(self.model.__name__)
-        name = getattr(self, 'instance_fixture', model_name)
+        name = getattr(self, "instance_fixture", model_name)
         if self.db:
-            request.getfixturevalue('db')
+            request.getfixturevalue("db")
         try:
             return request.getfixturevalue(name)
         except FixtureLookupError:
@@ -369,49 +374,53 @@ class ModelTester:
         got = str(instance)
         expect = self.representation
         if expect != got:
-            msg = 'invalid representation: expect: %r, got: %r'
+            msg = "invalid representation: expect: %r, got: %r"
             raise AssertionError(msg % (expect, got))
 
             # Check absolute url
-        if hasattr(model, 'get_absolute_url'):
+        if hasattr(model, "get_absolute_url"):
             assert instance.get_absolute_url() == self.absolute_url
             try:
                 resolve(self.absolute_url)
             except Http404:
-                raise AssertionError('absolute_url resulted on a 404')
+                raise AssertionError("absolute_url resulted on a 404")
 
         # Run examples
         for name, example in self.get_examples().items():
-            if name == 'clean':
+            if name == "clean":
                 example.full_clean()
-            elif example == 'invalid':
+            elif example == "invalid":
                 with pytest.raises(ValidationError):
                     example.full_clean()
             else:
-                raise ImproperlyConfigured(f'invalid example: {name}')
+                raise ImproperlyConfigured(f"invalid example: {name}")
 
     def check_improperly_configured(self, instance):
         """
         Check if test class was correctly set up for instance.
         """
         model = self.model
-        requires_url = hasattr(model, 'get_absolute_url')
+        requires_url = hasattr(model, "get_absolute_url")
 
         # Check success
-        if (hasattr(self, 'representation')
-                and (hasattr(self, 'absolute_url') or not requires_url)):
+        if hasattr(self, "representation") and (
+            hasattr(self, "absolute_url") or not requires_url
+        ):
             return
 
-        print('HINT: You can create a valid tester class by replacing it by\n'
-              'the following code:')
+        print(
+            "HINT: You can create a valid tester class by replacing it by\n"
+            "the following code:"
+        )
         print(make_test_class(self, instance))
-        print('\nPlease revise to see if inferred properties are correct.')
-        raise ImproperlyConfigured('Model tester class is not configured')
+        print("\nPlease revise to see if inferred properties are correct.")
+        raise ImproperlyConfigured("Model tester class is not configured")
 
 
 #
 # Utility
 #
+
 
 def make_test_class(model_tester, instance):
     """
@@ -419,13 +428,13 @@ def make_test_class(model_tester, instance):
     ModelTester test class.
     """
 
-    base_names = ', '.join(cls.__name__ for cls in type(model_tester).__bases__)
+    base_names = ", ".join(cls.__name__ for cls in type(model_tester).__bases__)
     base = f"""
     class {model_tester.__class__.__name__}({base_names}):
         model = models.{instance.__class__.__name__}
         representation = {repr(str(instance))}"""
     if model_tester.db:
-        base += '\n        db = True'
-    if hasattr(instance, 'get_absolute_url'):
-        base += '\n        absolute_url = {instance.get_absolute_url()!r}'
+        base += "\n        db = True"
+    if hasattr(instance, "get_absolute_url"):
+        base += "\n        absolute_url = {instance.get_absolute_url()!r}"
     return base

@@ -13,44 +13,52 @@ from .api_info import ApiInfo
 from .resource_info import ResourceInfo
 from .utils import as_model, natural_base_url
 
-log = logging.getLogger('boogie.rest_api')
+log = logging.getLogger("boogie.rest_api")
 
 
 class RestAPI:
     """
     Base class that stores global information for building an REST API with DRF.
     """
+
     router_class = routers.DefaultRouter
 
     @lazy
     def last_version(self):
         versions = set(self.api_registry)
         versions.remove(None)
-        return max(versions) if versions else 'v1'
+        return max(versions) if versions else "v1"
 
     @lazy
     def urls(self):
         versions = [v for v in self.api_registry if v is not None]
         patterns = self.get_urlpatterns
         return [
-            *(path(f'{v}/', include(patterns(v))) for v in versions),
-            path('', api_root_view(versions)),
+            *(path(f"{v}/", include(patterns(v))) for v in versions),
+            path("", api_root_view(versions)),
         ]
 
     def __init__(self):
         self._api_info_base = api_info_base = ApiInfo(self)
         self.api_registry = {
             None: self._api_info_base,
-            'v1': ApiInfo(self, version='v1', parent=api_info_base),
+            "v1": ApiInfo(self, version="v1", parent=api_info_base),
         }
         self.inlines_registry = {}
 
-    def __call__(self, *args, version=None, inline=False, lookup_field='pk',
-                 base_url=None, base_name=None, **kwargs):
-
+    def __call__(
+        self,
+        *args,
+        version=None,
+        inline=False,
+        lookup_field="pk",
+        base_url=None,
+        base_name=None,
+        **kwargs,
+    ):
         def decorator(cls):
             if not isinstance(cls, type) and not issubclass(type, models.Model):
-                msg = f'must decorate a Django model subclass, got {cls}'
+                msg = f"must decorate a Django model subclass, got {cls}"
                 raise TypeError(msg)
             kwargs.update(
                 version=version,
@@ -102,8 +110,15 @@ class RestAPI:
         info.register_resource(model, resource_info, inline=inline)
         return resource_info
 
-    def register_viewset(self, viewset=None, base_url=None, *,  # noqa: C901
-                         version='v1', model=None, skip_serializer=False):
+    def register_viewset(  # noqa: C901
+        self,
+        viewset=None,
+        base_url=None,
+        *,
+        version="v1",
+        model=None,
+        skip_serializer=False,
+    ):
         """
         Register a viewset class responsible for handling the given url.
 
@@ -129,8 +144,8 @@ class RestAPI:
             base_url, viewset = viewset, None
         if viewset is None:
             args = locals()
-            args.pop('self')
-            args.pop('viewset')
+            args.pop("self")
+            args.pop("viewset")
             return lambda x: self.register_viewset(x, **args) or x
 
         api_info = self.get_api_info(version, create=True)
@@ -141,9 +156,9 @@ class RestAPI:
                 model = viewset.queryset.model
             except AttributeError:
                 raise ImproperlyConfigured(
-                    'could not determine the model of a ModelViewSet subclass. '
-                    'Please pass the model explicitly when registering this '
-                    'viewset.'
+                    "could not determine the model of a ModelViewSet subclass. "
+                    "Please pass the model explicitly when registering this "
+                    "viewset."
                 )
         model = as_model(model)
 
@@ -152,13 +167,13 @@ class RestAPI:
             base_url = natural_base_url(model)
         if base_url is None:
             raise ImproperlyConfigured(
-                'could not determine the base_url for this viewset. Please '
-                'pass this parameter explicitly when registering the viewset.'
+                "could not determine the base_url for this viewset. Please "
+                "pass this parameter explicitly when registering the viewset."
             )
 
         # Create ResourceInfo, if applicable
         if model is not None and skip_serializer:
-            kwargs = {'base_url': base_url}
+            kwargs = {"base_url": base_url}
 
             def update(to, src):
                 try:
@@ -166,9 +181,9 @@ class RestAPI:
                 except AttributeError:
                     pass
 
-            update('fields', attrgetter('Meta.fields'))
-            update('base_name', attrgetter('Meta.base_name'))
-            update('lookup_field', attrgetter('lookup_field'))
+            update("fields", attrgetter("Meta.fields"))
+            update("base_name", attrgetter("Meta.base_name"))
+            update("lookup_field", attrgetter("lookup_field"))
 
             api_info[model] = ResourceInfo(model, **kwargs)
 
@@ -188,7 +203,7 @@ class RestAPI:
         """
 
         def decorator(func):
-            action_name = name or func.__name__.replace('_', '-')
+            action_name = name or func.__name__.replace("_", "-")
             info.add_action(action_name, func, **kwargs)
             return func
 
@@ -268,7 +283,7 @@ class RestAPI:
         """
         return self.action(model, func, detail=False, **kwargs)
 
-    def property(self, model, func=None, *, version='v1', name=None):
+    def property(self, model, func=None, *, version="v1", name=None):
         """
         Decorator that declares a read-only API property.
 
@@ -288,7 +303,7 @@ class RestAPI:
         info = self.get_resource_info(model, version)
         return decorator if func is None else decorator(func)
 
-    def link(self, model, func=None, *, version='v1', name=None):
+    def link(self, model, func=None, *, version="v1", name=None):
         """
         Decorator that declares a function to compute a link included into the
         "links" section of the serialized model.
@@ -312,7 +327,7 @@ class RestAPI:
     #
     # Hooks
     #
-    def save_hook(self, model, func=None, *, version='v1'):
+    def save_hook(self, model, func=None, *, version="v1"):
         """
         Decorator that registers a hook that is executed when a new object is
         about to be saved. This occurs both during object creation and when it
@@ -339,13 +354,13 @@ class RestAPI:
         """
 
         def decorator(func):
-            info.add_hook('save', func)
+            info.add_hook("save", func)
             return func
 
         info = self.get_resource_info(model, version)
         return decorator if func is None else decorator(func)
 
-    def delete_hook(self, model, func=None, *, version='v1'):
+    def delete_hook(self, model, func=None, *, version="v1"):
         """
         Decorator that registers a hook that is executed before a new object is
         about to be deleted.
@@ -374,13 +389,13 @@ class RestAPI:
         """
 
         def decorator(func):
-            info.add_hook('delete', func)
+            info.add_hook("delete", func)
             return func
 
         info = self.get_resource_info(model, version)
         return decorator if func is None else decorator(func)
 
-    def query_hook(self, model, func=None, *, version='v1'):
+    def query_hook(self, model, func=None, *, version="v1"):
         """
         Decorator that registers a hook that is executed to extract the
         queryset used by the viewset class.
@@ -402,7 +417,7 @@ class RestAPI:
             """
 
         def decorator(func):
-            info.add_hook('query', func)
+            info.add_hook("query", func)
             return func
 
         info = self.get_resource_info(model, version)
@@ -411,7 +426,7 @@ class RestAPI:
     #
     # Actions
     #
-    def serialize(self, obj, request=None, version='v1'):
+    def serialize(self, obj, request=None, version="v1"):
         """
         Serialize object and return the corresponding JSON structure.
         """
@@ -423,19 +438,19 @@ class RestAPI:
             model = obj.model
             many = True
 
-        ctx = {'request': request} if request is not None else None
+        ctx = {"request": request} if request is not None else None
         serializer = self.get_serializer(model, version=version)
         result = serializer(obj, many=many, context=ctx)
         return result.data
 
-    def get_hyperlink(self, obj, request=None, version='v1'):
+    def get_hyperlink(self, obj, request=None, version="v1"):
         """
         Return the hyperlink of the given object in the API.
         """
         info = self.get_resource_info(type(obj), version=version)
         return info.detail_hyperlink(obj, request, version)
 
-    def get_router(self, version='v1'):
+    def get_router(self, version="v1"):
         """
         Gets a DRF router object for the given API version.
 
@@ -444,21 +459,21 @@ class RestAPI:
         """
         api_info = self.get_api_info(version)
         router = self.router_class()
-        router.root_view_name += '-' + version
+        router.root_view_name += "-" + version
         entries = sorted(api_info.iter_viewset_items())
 
         # Registered sorted entries
         for url, viewset in entries:
-            base_name = getattr(viewset, 'base_name', None)
+            base_name = getattr(viewset, "base_name", None)
             router.register(url, viewset, base_name)
-            log.debug('created viewset %s at %s' % (url, base_name))
+            log.debug("created viewset %s at %s" % (url, base_name))
         return router
 
-    def get_urls(self, version='v1'):
-        warn('this function is deprecated, please use get_urlpatterns instead.')
+    def get_urls(self, version="v1"):
+        warn("this function is deprecated, please use get_urlpatterns instead.")
         return self.get_router(version).urls
 
-    def get_urlpatterns(self, version='v1'):
+    def get_urlpatterns(self, version="v1"):
         """
         Return a list of urls to be included in Django's urlpatterns::
 
@@ -475,21 +490,21 @@ class RestAPI:
         """
         return self.get_router(version).urls
 
-    def get_serializer(self, model, version='v1'):
+    def get_serializer(self, model, version="v1"):
         """
         Return the serializer class for the given model.
         """
         api_info = self.get_api_info(version=version)
         return api_info.serializer_class(model)
 
-    def get_viewset(self, model, version='v1'):
+    def get_viewset(self, model, version="v1"):
         """
         Return the viewset class for the given model.
         """
         api_info = self.get_api_info(version=version)
         return api_info.viewset_class(model)
 
-    def get_api_info(self, version='v1', create=False):
+    def get_api_info(self, version="v1", create=False):
         """
         Return the ApiInfo instance associated with the given API version.
 
@@ -508,7 +523,7 @@ class RestAPI:
             self.api_registry[version] = registry
         return registry
 
-    def get_resource_info(self, model, version='v1'):
+    def get_resource_info(self, model, version="v1"):
         """
         Return the resource info object associated with the given model. If
         version does not exist, create a new ApiInfo object for the given
@@ -528,12 +543,12 @@ class RestAPI:
         try:
             return registry[model]
         except KeyError:
-            model_name = model._meta.name
-            version_string = '' if not version else ' (%s)' % version
+            model_name = model.__name__
+            version_string = "" if not version else " (%s)" % version
             raise ImproperlyConfigured(
-                '{model} is not registered on the API{version}. Please '
-                'decorate the model class with the boogie.rest.rest_api() '
-                'decorator.'.format(model=model_name, version=version_string)
+                "{model} is not registered on the API{version}. Please "
+                "decorate the model class with the boogie.rest.rest_api() "
+                "decorator.".format(model=model_name, version=version_string)
             )
 
 
@@ -550,5 +565,5 @@ def api_root_view(versions, description=None):
     if description:
         RestApiView.__doc__ = description
 
-    views = {version: 'api-root-' + version for version in versions}
+    views = {version: "api-root-" + version for version in versions}
     return RestApiView.as_view(api_root_dict=views)

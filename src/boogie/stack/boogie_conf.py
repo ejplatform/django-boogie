@@ -55,8 +55,8 @@ class InstalledAppsConf(django_conf.InstalledAppsConf):
 
     def get_third_party_apps(self):
         apps = super().get_third_party_apps()
-        if self.ENVIRONMENT == 'local':
-            apps = ['debug_toolbar', *apps, 'django_extensions']
+        if self.ENVIRONMENT == "local":
+            apps = ["debug_toolbar", *apps, "django_extensions"]
         return apps
 
 
@@ -67,16 +67,18 @@ class MiddlewareConf(django_conf.MiddlewareConf):
     """
 
 
-class BoogieConf(DjangoConf,
-                 SecurityConf,
-                 TemplatesConf,
-                 UrlsConf,
-                 MiddlewareConf,
-                 InstalledAppsConf,
-                 LoggingConf,
-                 ServicesConf,
-                 PathsConf,
-                 EnvironmentConf):
+class BoogieConf(
+    DjangoConf,
+    SecurityConf,
+    TemplatesConf,
+    UrlsConf,
+    MiddlewareConf,
+    InstalledAppsConf,
+    LoggingConf,
+    ServicesConf,
+    PathsConf,
+    EnvironmentConf,
+):
     """
     Base configuration for the Boogie stack.
 

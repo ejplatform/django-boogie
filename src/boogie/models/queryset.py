@@ -1,8 +1,8 @@
-import collections
+import collections.abc
 from functools import lru_cache, partial, singledispatch
 
 from django.db import models
-from django.db.models.query import ValuesListIterable
+from django.db.models.query import ValuesListIterable, BaseIterable
 from sidekick import lazy, itertools, import_later, alias
 
 from boogie.models.methodregistry import get_queryset_attribute
@@ -16,7 +16,7 @@ F_EXPR_TYPE = type(F.some_attr > 0)
 # Useful queryset methods
 # import bulk_update.manager
 # import manager_utils
-pd = import_later('pandas')
+pd = import_later("pandas")
 
 
 # noinspection PyProtectedMember,PyUnresolvedReferences
@@ -29,16 +29,16 @@ class QuerySet(models.QuerySet):
     """
 
     # Manager utils
-    id_dict = LazyMethod('manager_utils:ManagerUtilsMixin.id_dict')
-    bulk_upsert = LazyMethod('manager_utils:ManagerUtilsMixin.bulk_upsert')
-    sync = LazyMethod('manager_utils:ManagerUtilsMixin.sync')
-    upsert = LazyMethod('manager_utils:ManagerUtilsMixin.upsert')
-    get_or_none = LazyMethod('manager_utils:ManagerUtilsMixin.get_or_none')
-    single = LazyMethod('manager_utils:ManagerUtilsMixin.single')
+    id_dict = LazyMethod("manager_utils:ManagerUtilsMixin.id_dict")
+    bulk_upsert = LazyMethod("manager_utils:ManagerUtilsMixin.bulk_upsert")
+    sync = LazyMethod("manager_utils:ManagerUtilsMixin.sync")
+    upsert = LazyMethod("manager_utils:ManagerUtilsMixin.upsert")
+    get_or_none = LazyMethod("manager_utils:ManagerUtilsMixin.get_or_none")
+    single = LazyMethod("manager_utils:ManagerUtilsMixin.single")
 
     # Bulk update from manager utils is very limited, we use the implementation
     # in the django-bulk-update package.
-    bulk_update = LazyMethod('bulk_update.manager:BulkUpdateManager.bulk_update')
+    bulk_update = LazyMethod("bulk_update.manager:BulkUpdateManager.bulk_update")
 
     # Properties
     index = property(lambda self: Index(self))
@@ -48,6 +48,7 @@ class QuerySet(models.QuerySet):
     def as_manager(cls):
         # Overrides to use Boogie manager instead of the default manager
         from .manager import Manager
+
         manager = Manager.from_queryset(cls)()
         manager._built_with_as_manager = True
         return manager
@@ -55,7 +56,7 @@ class QuerySet(models.QuerySet):
     as_manager.queryset_only = True
     as_manager = classmethod(as_manager)
 
-    new = alias('model')
+    new = alias("model")
 
     def __getitem__(self, item):
         # 1D indexing is delegated to Django. We extend it with some
@@ -83,7 +84,7 @@ class QuerySet(models.QuerySet):
         try:
             row, col = item
         except IndexError:
-            raise TypeError('only 1d or 2d indexing is allowed')
+            raise TypeError("only 1d or 2d indexing is allowed")
 
         return setitem_2d(self, row, col, value)
 
@@ -134,9 +135,9 @@ class QuerySet(models.QuerySet):
         return self._mark_column_names(fields, qs)
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
-        if args and getattr(args[0], 'comparable_expression', False):
+        if args and getattr(args[0], "comparable_expression", False):
             expr, *args = args
-            name = f'filter_{id(expr)}'
+            name = f"filter_{id(expr)}"
             kwargs[name] = True
             qs = self.annotate(**{name: expr})
             # noinspection PyProtectedMember
@@ -151,8 +152,9 @@ class QuerySet(models.QuerySet):
     #
     # Pandas data frame and numpy array APIs
     #
-    def dataframe(self, *fields, index=None, verbose=False) \
-            -> 'pandas.DataFrame':  # noqa: F821
+    def dataframe(
+        self, *fields, index=None, verbose=False
+    ) -> "pd.DataFrame":  # noqa: F821
         """
         Convert query set to a Pandas data frame.
 
@@ -170,8 +172,11 @@ class QuerySet(models.QuerySet):
             if self._selected_column_names:
                 fields = self._selected_column_names
             else:
-                fields = [f.name for f in self.model._meta.fields
-                          if index is None and not f.primary_key]
+                fields = [
+                    f.name
+                    for f in self.model._meta.fields
+                    if index is None and not f.primary_key
+                ]
         elif len(fields) == 1 and isinstance(fields[0], collections.Mapping):
             field_map = fields[0]
             df = self.dataframe(*field_map.values(), index=index, verbose=verbose)
@@ -183,13 +188,14 @@ class QuerySet(models.QuerySet):
             index = self.model._meta.pk.name
 
         data = list(self.values_list(index, *fields, verbose=verbose))
-        df = pd.DataFrame(data, columns=['__index__', *fields])
-        df.index = df.pop('__index__')
+        df = pd.DataFrame(data, columns=["__index__", *fields])
+        df.index = df.pop("__index__")
         df.index.name = index
         return df
 
-    def pivot_table(self, index, columns, values,
-                    verbose=False, dropna=False, fill_value=None):
+    def pivot_table(
+        self, index, columns, values, verbose=False, dropna=False, fill_value=None
+    ):
         """
         Creates a pivot table from this queryset.
 
@@ -215,8 +221,13 @@ class QuerySet(models.QuerySet):
             df = pd.DataFrame(dtype=dtype, index=pd.Index([], dtype=int))
             df.index.name = index
             return df
-        return df.pivot_table(index=index, columns=columns, values=values,
-                              dropna=dropna, fill_value=fill_value)
+        return df.pivot_table(
+            index=index,
+            columns=columns,
+            values=values,
+            dropna=dropna,
+            fill_value=fill_value,
+        )
 
     def update_from_dataframe(self, dataframe, batch_size=None, in_bulk=True):
         """
@@ -238,28 +249,26 @@ class QuerySet(models.QuerySet):
         add_object = objects.append
         new_object = self.model
 
-        for pk, row in zip(dataframe.index, dataframe.to_dict('records')):
-            row.setdefault('pk', pk)
+        for pk, row in zip(dataframe.index, dataframe.to_dict("records")):
+            row.setdefault("pk", pk)
             add_object(new_object(**row))
 
         if in_bulk:
-            self.bulk_update(objects,
-                             update_fields=list(fields),
-                             batch_size=batch_size)
+            self.bulk_update(objects, update_fields=list(fields), batch_size=batch_size)
         else:
             for obj in objects:
-                obj.save(update_fields=fields)
+                obj.save()
 
-    def extend_dataframe(self, df, *fields, verbose=False):
+    def extend_dataframe(self, df, *fields, verbose=False) -> "pd.DataFrame":
         """
         Returns a copy of dataframe that includes columns computed from the
         given fields.
         """
-        extra = \
-            (self
-                .filter(pk__in=set(df.index))
-                .distinct()
-                .dataframe(*fields, verbose=verbose))
+        extra = (
+            self.filter(pk__in=set(df.index))
+            .distinct()
+            .dataframe(*fields, verbose=verbose)
+        )
         extra.index.name = df.index.name
         new = pd.DataFrame(df)
         for k, v in extra.items():
@@ -281,11 +290,43 @@ class QuerySet(models.QuerySet):
         """
         return self[-n:]
 
+    #
+    # Transformations
+    #
+    def map(self, func, *args, **kwargs):
+        """
+        Map function to each element returned by the dataframe.
+        """
+
+        if args or kwargs:
+            orig = func
+            func = lambda x: orig(*args, **kwargs)
+
+        clone = self.all()
+        iter_cls = MapIterable.as_iterable_class(func, clone._iterable_class)
+        clone._iterable_class = iter_cls
+        return clone
+
+    def annotate_attr(self, **kwargs):
+        """
+        Like Django's builtin annotate, but instead of operating in SQL-level,
+        it annotates the resulting Python objects.
+        """
+
+        def annotator(obj):
+            for k, v in kwargs.items():
+                if callable(v):
+                    v = v(obj)
+                setattr(obj, k, v)
+            return obj
+
+        return self.map(annotator)
+
 
 #
 # Auxiliary classes
 # ----------------------------------------------------------------------------
-class QuerysetSequence(collections.Sequence):
+class QuerysetSequence(collections.abc.Sequence):
     @staticmethod
     def prepare(queryset):
         return queryset
@@ -305,7 +346,7 @@ class QuerysetSequence(collections.Sequence):
         return self._prepared[item]
 
     def __repr__(self):
-        return '%s(%s)' % (type(self).__name__, list(self))
+        return "%s(%s)" % (type(self).__name__, list(self))
 
 
 class Index(QuerysetSequence):
@@ -315,7 +356,7 @@ class Index(QuerysetSequence):
 
     @staticmethod
     def prepare(qs):
-        return qs.values_list('pk', flat=True)
+        return qs.values_list("pk", flat=True)
 
 
 class RowIterable(ValuesListIterable):
@@ -327,10 +368,10 @@ class RowIterable(ValuesListIterable):
     @staticmethod
     @lru_cache()
     def _create_row_class(names):
-        return linear_namespace('Row', names)
+        return linear_namespace("Row", names)
 
     def __init__(self, *args, **kwargs):
-        self.field_names = kwargs.pop('field_names', None)
+        self.field_names = kwargs.pop("field_names", None)
         super().__init__(*args, **kwargs)
 
     def __iter__(self):
@@ -350,9 +391,28 @@ class RowIterable(ValuesListIterable):
             yield new(*row)
 
 
+class MapIterable(BaseIterable):
+    @classmethod
+    def as_iterable_class(cls, func, iterable_class):
+        return lambda *args, **kwargs: cls(
+            func, iterable_class(*args, **kwargs), *args, **kwargs
+        )
+
+    def __init__(self, func, iterable, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.function = func
+        self.iterable = iterable
+
+    def __iter__(self):
+        func = self.function
+        for elem in self.iterable:
+            yield func(elem)
+
+
 #
 # Getitem auxiliary functions
 # ----------------------------------------------------------------------------
+
 
 def getitem_2d(qs, rows, cols):
     """
@@ -391,7 +451,7 @@ def filter_queryset(qs, rows):
     elif isinstance(rows, slice):
         if rows == slice(None, None, None):
             return qs
-        raise IndexError('invalid column slice: %s' % rows)
+        raise IndexError("invalid column slice: %s" % rows)
 
     elif isinstance(rows, QuerySet):
         return qs & rows
@@ -399,7 +459,7 @@ def filter_queryset(qs, rows):
     elif isinstance(rows, F_EXPR_TYPE):
         return qs.filter(rows)
 
-    raise TypeError('invalid row selector: %r' % rows.__class__.__name__)
+    raise TypeError("invalid row selector: %r" % rows.__class__.__name__)
 
 
 def select_columns(qs, cols):
@@ -412,12 +472,12 @@ def select_columns(qs, cols):
     elif isinstance(cols, slice):
         if cols == slice(None, None, None):
             return qs
-        raise IndexError('invalid column slice: %s' % cols)
+        raise IndexError("invalid column slice: %s" % cols)
 
     elif isinstance(cols, (str, F, models.F)):
         return qs.values_list(cols, flat=True)
 
-    raise TypeError('invalid column selector: %r' % cols.__class__.__name__)
+    raise TypeError("invalid column selector: %r" % cols.__class__.__name__)
 
 
 def get_column_names(cols, qs):
@@ -432,7 +492,7 @@ def get_column_names(cols, qs):
         elif isinstance(col, F):
             name = col._name
         else:
-            raise TypeError('invalid column', col)
+            raise TypeError("invalid column", col)
         append(name)
     return names
 
@@ -442,7 +502,7 @@ def get_column_names(cols, qs):
 # ----------------------------------------------------------------------------
 @singledispatch
 def get_queryset_item(item, qs):
-    raise TypeError(f'Invalid index type: {item.__class__.__name__}')
+    raise TypeError(f"Invalid index type: {item.__class__.__name__}")
 
 
 @get_queryset_item.register(tuple)
@@ -450,7 +510,7 @@ def _(item, qs):
     try:
         row, col = item
     except IndexError:
-        raise TypeError('only 1d or 2d indexing is allowed')
+        raise TypeError("only 1d or 2d indexing is allowed")
     return getitem_2d(qs, row, col)
 
 
@@ -459,23 +519,22 @@ def _(n, qs):
     if n >= 0:
         return super(QuerySet, qs).__getitem__(n)
     else:
-        rev = qs.reverse() if qs.ordered else qs.order_by('-id')
+        rev = qs.reverse() if qs.ordered else qs.order_by("-id")
         return rev[abs(n) - 1]
 
 
 @get_queryset_item.register(slice)
 def _(slice, qs):
     start, stop, step = slice.start, slice.stop, slice.step
-    if step is None and \
-            (start is None or start >= 0) and \
-            (stop is None or stop >= 0):
+    if step is None and (start is None or start >= 0) and (stop is None or stop >= 0):
         return super(QuerySet, qs).__getitem__(slice)
     elif stop <= 0:
         if start != 0 and start is not None:
             raise ValueError(
-                'negative index are only allowed if starting from the '
-                'beginning of the queryset')
-        return qs.reverse()[abs(stop) - 1:].reverse()
+                "negative index are only allowed if starting from the "
+                "beginning of the queryset"
+            )
+        return qs.reverse()[abs(stop) - 1 :].reverse()
 
 
 @get_queryset_item.register(set)
@@ -485,11 +544,11 @@ def _(set_index, qs):
 
 @get_queryset_item.register(list)
 def _(lst, qs):
-    raise NotImplementedError('use set instead of list')
+    raise NotImplementedError("use set instead of list")
 
 
 def setitem_1d(qs, item, value):
-    raise TypeError('invalid index type: %r' % item.__class__.__name__)
+    raise TypeError("invalid index type: %r" % item.__class__.__name__)
 
 
 def setitem_2d(qs: QuerySet, rows, cols, value):
@@ -505,7 +564,7 @@ def setitem_2d(qs: QuerySet, rows, cols, value):
 
 
 def set_columns(qs: QuerySet, cols, value):
-    raise TypeError('invalid column selector: %r' % cols.__class__.__name__)
+    raise TypeError("invalid column selector: %r" % cols.__class__.__name__)
 
 
 def as_col_name(obj):
@@ -515,7 +574,7 @@ def as_col_name(obj):
         return obj
     elif isinstance(obj, F):
         print(obj, obj.__dict__)
-        raise ValueError('invalid column object: %s' % obj)
+        raise ValueError("invalid column object: %s" % obj)
     return obj.name
 
 

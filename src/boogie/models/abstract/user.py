@@ -27,9 +27,9 @@ class UserManager(BaseUserManager):
 
     def create_user(self, *args, username=None, commit=True, **kwargs):
         if username is not None:
-            kwargs['alias'] = username
+            kwargs["alias"] = username
         new = self.model(**kwargs)
-        new.set_password(kwargs.get('password'))
+        new.set_password(kwargs.get("password"))
         if commit:
             new.save()
         return new
@@ -50,56 +50,45 @@ class User(AbstractBaseUser, PermissionsMixin):
     Base user model.
     """
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     email = models.EmailField(
-        _('E-mail'),
+        _("E-mail"),
         db_index=True,
         unique=True,
         help_text=_(
-            'Users can register additional e-mail addresses. This is the '
-            'main e-mail address which is used for login.'
-        )
+            "Users can register additional e-mail addresses. This is the "
+            "main e-mail address which is used for login."
+        ),
     )
     name = models.CharField(
-        _('Name'),
-        max_length=140,
-        help_text=_(
-            'Full name of the user.'
-        )
+        _("Name"), max_length=140, help_text=_("Full name of the user.")
     )
     alias = models.CharField(
-        _('Alias'),
+        _("Alias"),
         max_length=20,
-        help_text=_(
-            'Public alias used to identify the user.'
-        )
+        help_text=_("Public alias used to identify the user."),
     )
     is_staff = models.BooleanField(
-        _('staff status'),
+        _("staff status"),
         default=False,
-        help_text=_(
-            'Designates whether the user can log into the admin site.'
-        ),
+        help_text=_("Designates whether the user can log into the admin site."),
     )
     is_active = models.BooleanField(
-        _('active'),
+        _("active"),
         default=True,
         help_text=_(
-            'Designates whether this user should be treated as active. '
-            'Unselect this instead of deleting accounts.'
+            "Designates whether this user should be treated as active. "
+            "Unselect this instead of deleting accounts."
         ),
     )
-    date_joined = models.DateTimeField(
-        _('date joined'),
-        default=timezone.now
-    )
+    date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
 
     objects = UserManager()
 
     # Properties defined for better compatibility with default user model
     username = property(lambda self: self.alias)
-    first_name = property(lambda self: self.partition(' ')[0])
-    last_name = property(lambda self: self.partition(' ')[-1])
+    first_name = property(lambda self: self.partition(" ")[0])
+    last_name = property(lambda self: self.partition(" ")[-1])
     profile_class = None
 
     class Meta:
@@ -113,7 +102,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         profile_class = self.profile_class
         if profile_class is None:
             try:
-                profile_class = apps.get_model(self._meta.app_label, 'Profile')
+                profile_class = apps.get_model(self._meta.app_label, "Profile")
             except KeyError:
                 return None
 
@@ -139,7 +128,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             super().save(*args, **kwargs)
 
     def natural_key(self):
-        return 'email'
+        return "email"
 
     def get_full_name(self):
         return self.name.strip()
@@ -148,7 +137,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.alias
 
     def get_absolute_url(self):
-        return reverse('users:profile-detail', args=(self.id,))
+        return reverse("users:profile-detail", args=(self.id,))
 
 
 class Profile(models.Model):
@@ -157,28 +146,28 @@ class Profile(models.Model):
     """
 
     user = models.OneToOneField(
-        get_config('AUTH_USER_MODEL', 'auth.User'),
+        get_config("AUTH_USER_MODEL", "auth.User"),
         on_delete=models.CASCADE,
-        verbose_name=_('user'),
-        related_name='profile_ref',
+        verbose_name=_("user"),
+        related_name="profile_ref",
     )
 
     # Delegates and properties
-    username = delegate_to('user', read_only=True)
-    name = delegate_to('user', read_only=True)
-    first_name = delegate_to('user', read_only=True)
-    last_name = delegate_to('user', read_only=True)
-    alias = delegate_to('user', read_only=True)
-    email = delegate_to('user', read_only=True)
+    username = delegate_to("user", read_only=True)
+    name = delegate_to("user", read_only=True)
+    first_name = delegate_to("user", read_only=True)
+    last_name = delegate_to("user", read_only=True)
+    alias = delegate_to("user", read_only=True)
+    email = delegate_to("user", read_only=True)
 
     class Meta:
         abstract = True
 
     def __str__(self):
         if self.user is None:
-            return __('Unbound profile')
+            return __("Unbound profile")
         full_name = self.user.get_full_name() or self.user.username
-        return __('%(name)s\'s profile') % {'name': full_name}
+        return __("%(name)s's profile") % {"name": full_name}
 
     def get_absolute_url(self):
         if self.user is not None:

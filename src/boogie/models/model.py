@@ -6,8 +6,8 @@ from sidekick import import_later
 from .manager import Manager
 from .utils import with_base
 
-model_utils = import_later('model_utils.models')
-polymorphic = import_later('polymorphic.models')
+model_utils = import_later("model_utils.models")
+polymorphic = import_later("polymorphic.models")
 
 
 class ModelBase(DjangoModelBase):
@@ -20,24 +20,24 @@ class ModelBase(DjangoModelBase):
         bases, kwargs = extract_bases(bases, **kwargs)
 
         # Is abstract
-        if 'Meta' in ns:
-            is_abstract = getattr(ns['Meta'], 'abstract', False)
+        if "Meta" in ns:
+            is_abstract = getattr(ns["Meta"], "abstract", False)
         else:
             is_abstract = False
 
         # Add default manager to class
-        if not is_abstract and 'objects' not in ns:
-            ns['objects'] = manager = Manager()
+        if not is_abstract and "objects" not in ns:
+            ns["objects"] = manager = Manager()
             manager.auto_created = True
 
         # Additional arguments are passed to the Meta class object
-        if kwargs and 'Meta' in ns:
+        if kwargs and "Meta" in ns:
             raise ImproperlyConfigured(
-                'Cannot pass meta arguments to class constructor and the Meta '
-                'class simultaneously.'
+                "Cannot pass meta arguments to class constructor and the Meta "
+                "class simultaneously."
             )
         if kwargs:
-            ns['Meta'] = type('Meta', (), kwargs)
+            ns["Meta"] = type("Meta", (), kwargs)
 
         # Create class using default methods.
         return super().__new__(metacls, name, bases, ns)
@@ -46,8 +46,15 @@ class ModelBase(DjangoModelBase):
 #
 # Utility
 #
-def extract_bases(bases, timestamped=False, timeframed=False, status=False,
-                  soft_deletable=False, polymorphic=False, **kwargs):
+def extract_bases(
+    bases,
+    timestamped=False,
+    timeframed=False,
+    status=False,
+    soft_deletable=False,
+    polymorphic=False,
+    **kwargs
+):
     # Inject custom base classes from metaclass options.
     if timeframed:
         bases = with_base(bases, model_utils.TimeFramedModel)

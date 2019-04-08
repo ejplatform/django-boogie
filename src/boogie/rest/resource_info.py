@@ -44,7 +44,7 @@ class ResourceInfo:
         ns = {}
         for name, property in self.properties.items():
             ns[name] = SerializerMethodField()
-            ns['get_' + name] = property_method(property, name)
+            ns["get_" + name] = property_method(property, name)
         return ns
 
     @lazy
@@ -65,46 +65,46 @@ class ResourceInfo:
 
     @lazy
     def detail_actions(self):
-        return {k: v for k, v in self.actions.items() if v['args'].get('detail')}
+        return {k: v for k, v in self.actions.items() if v["args"].get("detail")}
 
     @lazy
     def serializer_hook_methods(self):
         methods = {}
 
-        if 'save' in self.hooks:
-            save_hook = wrap_request_instance_method(self.hooks['save'])
-            methods['save_hook'] = save_hook
+        if "save" in self.hooks:
+            save_hook = wrap_request_instance_method(self.hooks["save"])
+            methods["save_hook"] = save_hook
 
         return methods
 
     @lazy
     def viewset_hook_methods(self):
         methods = {}
-        for hook in ('delete', 'query'):
+        for hook in ("delete", "query"):
             if hook in self.hooks:
                 hook_method = wrap_request_instance_method(self.hooks[hook])
-                methods[hook + '_hook'] = hook_method
+                methods[hook + "_hook"] = hook_method
 
         return methods
 
-    def __init__(self,
-                 model: Model,
-
-                 # Fields
-                 fields=None, exclude=(),
-
-                 # Urls and views
-                 base_url=None, base_name=None,
-
-                 # Viewset options
-                 viewset_base=RestAPIBaseViewSet,
-                 update_queryset=lambda x: x,
-
-                 # Serializer options
-                 serializer_base=None,
-
-                 # Other options
-                 inline=False, lookup_field='pk'):
+    def __init__(
+        self,
+        model: Model,
+        # Fields
+        fields=None,
+        exclude=(),
+        # Urls and views
+        base_url=None,
+        base_name=None,
+        # Viewset options
+        viewset_base=RestAPIBaseViewSet,
+        update_queryset=lambda x: x,
+        # Serializer options
+        serializer_base=None,
+        # Other options
+        inline=False,
+        lookup_field="pk",
+    ):
 
         self.model = model
         self.meta = model._meta
@@ -150,8 +150,8 @@ class ResourceInfo:
         return copy(self)
 
     def add_hook(self, hook, function):
-        if hook not in ('save', 'delete', 'query'):
-            raise ValueError(f'invalid hook: {hook}')
+        if hook not in ("save", "delete", "query"):
+            raise ValueError(f"invalid hook: {hook}")
         self.hooks[hook] = function
 
     def add_field(self, name, check=True):
@@ -187,14 +187,13 @@ class ResourceInfo:
         """
         Register an action with the given name.
         """
-        if 'list' in kwargs and 'detail' in kwargs:
-            msg = ('cannot specify both "list" and "detail" parameters '
-                   'simultaneously')
+        if "list" in kwargs and "detail" in kwargs:
+            msg = 'cannot specify both "list" and "detail" parameters ' "simultaneously"
             raise TypeError(msg)
-        elif 'list' in kwargs:
-            kwargs['detail'] = not kwargs.pop('list')
-        kwargs.setdefault('detail', True)
-        self.actions[name] = {'method': method, 'args': kwargs}
+        elif "list" in kwargs:
+            kwargs["detail"] = not kwargs.pop("list")
+        kwargs.setdefault("detail", True)
+        self.actions[name] = {"method": method, "args": kwargs}
 
     #
     # Info
@@ -203,7 +202,7 @@ class ResourceInfo:
         """
         Base name with version information.
         """
-        return '%s-%s' % (version, self.base_name)
+        return "%s-%s" % (version, self.base_name)
 
     def extra_kwargs(self, version):
         """
@@ -211,8 +210,8 @@ class ResourceInfo:
         model.
         """
         return {
-            'view_name': self.full_base_name(version) + '-detail',
-            'lookup_field': self.lookup_field,
+            "view_name": self.full_base_name(version) + "-detail",
+            "lookup_field": self.lookup_field,
         }
 
     def detail_hyperlink(self, obj, request=None, version=None):
@@ -225,7 +224,7 @@ class ResourceInfo:
             view_name = self.full_base_name(version)
         else:
             view_name = self.base_name
-        path = reverse(view_name + '-detail', kwargs=kwargs)
+        path = reverse(view_name + "-detail", kwargs=kwargs)
         return get_url_prefix(request) + path
 
 
@@ -240,7 +239,7 @@ def property_method(func, name):
     def method(self, obj):
         return func(obj)
 
-    method.__name__ = method.__qualname__ = 'get_' + name
+    method.__name__ = method.__qualname__ = "get_" + name
     return method
 
 

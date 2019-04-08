@@ -28,7 +28,7 @@ def queryset_method(model, skip_manager=False, name=None):
 
     def decorator(func):
         if not skip_manager:
-            manager_func = (lambda m: func(m.get_queryset()))
+            manager_func = lambda m: func(m.get_queryset())
             manager_method(model, name=name)(wraps(func)(manager_func))
         return _queryset_method(model, name=name)(func)
 
@@ -57,7 +57,7 @@ def get_attribute(qs, attr, registry):
     Common implementation to `func`:get_queryset_attr
     """
 
-    if attr.startswith('_'):
+    if attr.startswith("_"):
         return NotImplemented
 
     model = qs.model
@@ -96,7 +96,7 @@ def registry_decorator(registry):
     def register(model, name=None):
         def decorator(obj):
             attr = name or obj.__name__
-            if hasattr(obj, '__get__'):
+            if hasattr(obj, "__get__"):
                 getter = obj.__get__
                 registry[(model, attr)] = lambda qs: getter(qs, type(qs))
             else:

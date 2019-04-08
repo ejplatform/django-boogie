@@ -21,29 +21,25 @@ class EnumField(models.Field):
             human-friendly names for each enumeration value.
     """
 
-    description = _('An enumeration field')
+    description = _("An enumeration field")
 
     def __init__(self, enum, *args, **kwargs):
         if not (isinstance(enum, type) and issubclass(enum, Enum)):
-            raise ImproperlyConfigured(
-                'First argument must be a enum.Enum subclass.'
-            )
+            raise ImproperlyConfigured("First argument must be a enum.Enum subclass.")
         if not list(enum):
             raise ImproperlyConfigured(
-                f'Must be a concrete enumeration. The provided class '
-                f'{enum.__qualname__} is empty.'
+                f"Must be a concrete enumeration. The provided class "
+                f"{enum.__qualname__} is empty."
             )
-        if 'choices' in kwargs:
-            raise ImproperlyConfigured(
-                'Cannot set the choices of an enum field.'
-            )
+        if "choices" in kwargs:
+            raise ImproperlyConfigured("Cannot set the choices of an enum field.")
         if not is_integer_enum(enum):
-            if 'max_length' not in kwargs:
-                kwargs['max_length'] = enum_max_length(enum)
-            elif kwargs['max_length'] < enum_max_length(enum):
+            if "max_length" not in kwargs:
+                kwargs["max_length"] = enum_max_length(enum)
+            elif kwargs["max_length"] < enum_max_length(enum):
                 raise ImproperlyConfigured(
-                    'Maximum length is smaller then the larger enum field '
-                    'representation.'
+                    "Maximum length is smaller then the larger enum field "
+                    "representation."
                 )
 
         self.enum = enum
@@ -57,7 +53,7 @@ class EnumField(models.Field):
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         args = [self.enum] + args
-        kwargs.pop('choices')
+        kwargs.pop("choices")
         return name, path, args, kwargs
 
     def get_internal_type(self):
@@ -70,7 +66,7 @@ class EnumField(models.Field):
         return value_to_enum(self.enum, value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        value = getattr(value, 'value', value)
+        value = getattr(value, "value", value)
         prep_value = self._impl.get_db_prep_value
         return prep_value(self, value, connection, prepared=prepared)
 
@@ -78,7 +74,7 @@ class EnumField(models.Field):
         super().contribute_to_class(cls, name, *args, **kwargs)
 
         # Add options
-        prefix = name.upper() + '_'
+        prefix = name.upper() + "_"
         for option in self.enum:
             setattr(cls, prefix + option.name, option)
 
@@ -113,7 +109,7 @@ class EnumDescriptor:
 
     def __set__(self, instance, value):
         enum = self.enum
-        if value == '':
+        if value == "":
             value = next(iter(enum))
         if not isinstance(value, (enum, NoneType)):
             value = value_to_enum(enum, value)
@@ -127,7 +123,7 @@ def fix_renderer(renderer):
     """
 
     def render(value=None, **kwargs):
-        value = getattr(value, 'value', value)
+        value = getattr(value, "value", value)
         return renderer(value=value, **kwargs)
 
     return render
@@ -139,7 +135,7 @@ def get_choices_from_enum(enum):
     """
 
     def human(x):
-        return x.lower().replace('_', ' ')
+        return x.lower().replace("_", " ")
 
     def description(x):
         try:
@@ -185,8 +181,8 @@ def value_to_enum(enum_type, value):
             pass
 
         # Sometimes the string comes in the form of <TypeName>.<Enum Name>
-        if value.startswith(enum_type.__name__ + '.'):
-            attr = value[len(enum_type.__name__) + 1:]
+        if value.startswith(enum_type.__name__ + "."):
+            attr = value[len(enum_type.__name__) + 1 :]
             if attr and hasattr(enum_type, attr):
                 new_value = getattr(enum_type, attr)
                 if isinstance(new_value, enum_type):
@@ -199,7 +195,7 @@ def value_to_enum(enum_type, value):
         pass
 
     # Give up!
-    raise ValueError('not a valid value for enumeration: %r' % value)
+    raise ValueError("not a valid value for enumeration: %r" % value)
 
 
 @lru_cache(256)

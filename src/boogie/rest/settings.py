@@ -1,6 +1,6 @@
 from django.conf import settings as _settings
 
-BOOGIE_REST_API_SCHEME = getattr(_settings, 'BOOGIE_REST_API_SCHEME', None)
+BOOGIE_REST_API_SCHEME = getattr(_settings, "BOOGIE_REST_API_SCHEME", None)
 
 
 def get_scheme(request):
@@ -9,5 +9,5 @@ def get_scheme(request):
 
 def get_url_prefix(request):
     if request is None:
-        return ''
-    return f'{get_scheme(request)}://{request.get_host()}'
+        return ""
+    return f"{get_scheme(request)}://{request.get_host()}"

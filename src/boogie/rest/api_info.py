@@ -1,4 +1,4 @@
-from collections import Mapping
+from collections.abc import Mapping
 
 from django.core.exceptions import ImproperlyConfigured
 from sidekick import lazy
@@ -30,9 +30,10 @@ class ApiInfo(Mapping):
     def __getitem__(self, model):
         model = as_model(model)
         result = (
-                self.registry.get(model)
-                or self.inline_models.get(model)
-                or self.parent and self.parent.get(model)
+            self.registry.get(model)
+            or self.inline_models.get(model)
+            or self.parent
+            and self.parent.get(model)
         )
         if result is None:
             raise KeyError(model)
@@ -41,7 +42,7 @@ class ApiInfo(Mapping):
     def __setitem__(self, model, value):
         model = as_model(model)
         if model in self.registry:
-            raise KeyError(f'Model {model.__name__} already registered')
+            raise KeyError(f"Model {model.__name__} already registered")
         self.registry[model] = value
 
     def __len__(self):
@@ -54,10 +55,8 @@ class ApiInfo(Mapping):
             yield from self.parent
 
     def __repr__(self):
-        data = {
-            model.__name__: info.base_url for model, info in self.registry.items()
-        }
-        return '<ApiInfo version=%r, %r>' % (self.version, data)
+        data = {model.__name__: info.base_url for model, info in self.registry.items()}
+        return "<ApiInfo version=%r, %r>" % (self.version, data)
 
     def add_hook(self, model, hook, function):
         """
@@ -146,9 +145,9 @@ class ApiInfo(Mapping):
                 resource_info = self[related]
             except KeyError:
                 raise ImproperlyConfigured(
-                    f'{model.__name__} references a {related.__name__} field as '
-                    f'{name}. This model is not registered on the api and '
-                    f'therefore cannot be included as reference.'
+                    f"{model.__name__} references a {related.__name__} field as "
+                    f"{name}. This model is not registered on the api and "
+                    f"therefore cannot be included as reference."
                 )
             extra = resource_info.extra_kwargs(self.version)
             extra_kwargs[name] = extra
@@ -164,16 +163,16 @@ class ApiInfo(Mapping):
         extra = self.extra_kwargs(model)
 
         bases = as_bases(info.viewset_base)
-        name = info.model.__name__ + 'ViewSet'
+        name = info.model.__name__ + "ViewSet"
         base_name = self.base_name(model)
 
         namespace = {
-            'Meta': viewset_meta(info, extra),
-            'queryset': info.queryset,
-            'serializer_class': self.serializer_class(model),
-            'lookup_field': info.lookup_field,
-            'base_name': base_name,
-            'api_version': self.version,
+            "Meta": viewset_meta(info, extra),
+            "queryset": info.queryset,
+            "serializer_class": self.serializer_class(model),
+            "lookup_field": info.lookup_field,
+            "base_name": base_name,
+            "api_version": self.version,
             **info.action_methods,
             **info.viewset_hook_methods,
         }
@@ -190,18 +189,18 @@ class ApiInfo(Mapping):
         extra = self.extra_kwargs(model)
 
         bases = as_bases(info.serializer_base)
-        name = info.model.__name__ + 'Serializer'
+        name = info.model.__name__ + "Serializer"
         base_name = self.base_name(model)
 
         namespace = {
-            'Meta': serializer_meta(info, extra),
-            'base_name': base_name,
-            'detail_url': base_name + '-detail',
-            'list_url': base_name + '-list',
-            'lookup_field': info.lookup_field,
-            'actions': list(info.detail_actions),
-            'api_version': self.version,
-            'explicit_links': tuple(info.links.items()),
+            "Meta": serializer_meta(info, extra),
+            "base_name": base_name,
+            "detail_url": base_name + "-detail",
+            "list_url": base_name + "-list",
+            "lookup_field": info.lookup_field,
+            "actions": list(info.detail_actions),
+            "api_version": self.version,
+            "explicit_links": tuple(info.links.items()),
             **info.property_methods,
             **info.serializer_hook_methods,
         }
@@ -234,19 +233,23 @@ def viewset_meta(info, extra_kwargs):
     """
     Meta class for ViewSet.
     """
-    return type('Meta', (), {
-        'model': info.model,
-        'fields': info.fields,
-        'extra_kwargs': extra_kwargs,
-    })
+    return type(
+        "Meta",
+        (),
+        {"model": info.model, "fields": info.fields, "extra_kwargs": extra_kwargs},
+    )
 
 
 def serializer_meta(info, extra_kwargs):
     """
     Meta class for Serializer class.
     """
-    return type('Meta', (), {
-        'model': info.model,
-        'fields': ['links', *info.fields],
-        'extra_kwargs': extra_kwargs,
-    })
+    return type(
+        "Meta",
+        (),
+        {
+            "model": info.model,
+            "fields": ["links", *info.fields],
+            "extra_kwargs": extra_kwargs,
+        },
+    )

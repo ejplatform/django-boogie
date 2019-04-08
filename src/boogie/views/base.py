@@ -4,7 +4,7 @@ from django.http import HttpResponse
 
 from .utils import not_implemented, allowed_methods, method_map, middleware_chain
 
-log = logging.getLogger('django.request')
+log = logging.getLogger("django.request")
 
 
 class View:
@@ -24,14 +24,16 @@ class View:
             if hasattr(cls, k):
                 setattr(self, k, v)
             else:
-                raise TypeError(f'{k} is not an attribute of {cls.__name}')
+                raise TypeError(f"{k} is not an attribute of {cls.__name}")
 
         self._method_map = method_map(self)
         if self.allowed_methods is None:
             self.allowed_methods = allowed_methods(self)
 
         self.middlewares = self.select_middlewares(middlewares)
-        self._middleware_chain = middleware_chain(self.middlewares, self.request_handler)
+        self._middleware_chain = middleware_chain(
+            self.middlewares, self.request_handler
+        )
 
     def __call__(self, request, **kwargs):
         return self.respond(request, **kwargs)
@@ -78,6 +80,6 @@ class View:
         """
         response = HttpResponse()
         methods = map(str.upper, self.allowed_methods)
-        response['Allow'] = ', '.join(methods)
-        response['Content-Length'] = '0'
+        response["Allow"] = ", ".join(methods)
+        response["Content-Length"] = "0"
         return response

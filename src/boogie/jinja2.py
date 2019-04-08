@@ -9,13 +9,13 @@ from jinja2 import Environment
 from markdown import markdown
 from markupsafe import Markup
 
-SALT_CHARS = string.ascii_letters + string.digits + '-_'
+SALT_CHARS = string.ascii_letters + string.digits + "-_"
 
 
 def environment(**options):
-    options.pop('debug', None)
-    options.setdefault('trim_blocks', True)
-    options.setdefault('lstrip_blocks', True)
+    options.pop("debug", None)
+    options.setdefault("trim_blocks", True)
+    options.setdefault("lstrip_blocks", True)
     env = Environment(**options)
     env.globals.update(
         static=staticfiles_storage.url,
@@ -23,12 +23,9 @@ def environment(**options):
         salt_attr=salt_attr,
         salt_tag=salt_tag,
         salt=salt,
-        service_worker=getattr(settings, 'SERVICE_WORKER', False),
+        service_worker=getattr(settings, "SERVICE_WORKER", False),
     )
-    env.filters.update(
-        markdown=lambda x: Markup(markdown(x)),
-        salt=salt,
-    )
+    env.filters.update(markdown=lambda x: Markup(markdown(x)), salt=salt)
     env.install_gettext_translations(translation, newstyle=True)
     return env
 
@@ -69,7 +66,7 @@ def salt(size=None):
     size = random.randint(4, 10) if size is None else size
     func = random.choice
     chars = SALT_CHARS
-    return ''.join(func(chars) for _ in range(size))
+    return "".join(func(chars) for _ in range(size))
 
 
 def salt_attr():

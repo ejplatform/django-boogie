@@ -16,29 +16,56 @@ import random
 
 from faker import Factory
 
-fake = Factory.create('en-us')
+fake = Factory.create("en-us")
 
 star_wars_characters = [
-    'Han Solo', 'Darth Vader', 'C3PO', 'R2D2', 'Luke Skywalker',
-    'Princess Leia', 'Jabba', 'Obi Wan', 'Yoda', 'Jar Jar Binks',
+    "Han Solo",
+    "Darth Vader",
+    "C3PO",
+    "R2D2",
+    "Luke Skywalker",
+    "Princess Leia",
+    "Jabba",
+    "Obi Wan",
+    "Yoda",
+    "Jar Jar Binks",
 ]
 famous_scientists = [
     # Physicists
-    'Einstein', 'Newton', 'Dirac', 'Bohr', 'Rutherford', 'Heisenberg',
-    'Curie', 'Langevin', 'Boltzmann',
-
+    "Einstein",
+    "Newton",
+    "Dirac",
+    "Bohr",
+    "Rutherford",
+    "Heisenberg",
+    "Curie",
+    "Langevin",
+    "Boltzmann",
     # Mathematicians
-    'Pythagoras', 'Peano', 'Hilbert', 'Gauss', 'Galois',
-
+    "Pythagoras",
+    "Peano",
+    "Hilbert",
+    "Gauss",
+    "Galois",
     # Computer science
-    'Knuth', 'Turing', 'Tim',
-
+    "Knuth",
+    "Turing",
+    "Tim",
     # Biology
-    'Darwin', 'Mendel', 'Lamarck', 'Mayr', 'Dobzhansky',
+    "Darwin",
+    "Mendel",
+    "Lamarck",
+    "Mayr",
+    "Dobzhansky",
 ]
 adjective_list = [
-    'grumpy', 'heroic', 'coward', 'brave', 'treacherous', 'powerful',
-    'influential',
+    "grumpy",
+    "heroic",
+    "coward",
+    "brave",
+    "treacherous",
+    "powerful",
+    "influential",
 ]
 phrase_groups = []
 
@@ -71,7 +98,7 @@ def subjective_adjective_phrase(subjectives=None, adjectives=None):
     """
     subjective = random.choice(subjectives or famous_scientists)
     adjective = random.choice(adjectives or adjective_list)
-    return '%s %s' % (adjective.title(), subjective)
+    return "%s %s" % (adjective.title(), subjective)
 
 
 @is_phase_provider

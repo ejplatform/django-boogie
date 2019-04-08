@@ -17,13 +17,13 @@ class LazyMethod:
             mod = importlib.import_module(self.module)
         except ImportError:
             raise ImproperlyConfigured(
-                f'failed to import module: {self.module}\n'
-                f'Please install this module in your environment.'
+                f"failed to import module: {self.module}\n"
+                f"Please install this module in your environment."
             )
         return self.attr_getter(mod)
 
     def __init__(self, path, pip=None):
-        self.module, _, self.path = path.partition(':')
+        self.module, _, self.path = path.partition(":")
         self.pip = pip
         self.attr_getter = op.attrgetter(self.path)
 

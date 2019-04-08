@@ -25,6 +25,7 @@ class BoogieMommy(Mommy):
     """
     Base for Boogie Model Mommy classes.
     """
+
     attr_mapping = {}
     type_mapping = {}
 
@@ -45,7 +46,7 @@ def factory(model, **kwargs):
     Creates a factory boy factory class
     """
 
-    ns = {'Meta': type('Meta', (), {'model': model})}
+    ns = {"Meta": type("Meta", (), {"model": model})}
 
     # Handle explicitly declared values
     for k, v in kwargs:
@@ -60,7 +61,7 @@ def factory(model, **kwargs):
             continue
         ns[field.name] = implicit_declaration(model, field.name, ns, mommy)
 
-    return type(model.__name__ + 'Factory', (DjangoModelFactory,), ns)
+    return type(model.__name__ + "Factory", (DjangoModelFactory,), ns)
 
 
 def explicit_declaration(model, name, value):
@@ -126,7 +127,7 @@ def implicit_declaration(model, name, definitions, mommy):
         faker = getattr(fake, name)
         return declarations.LazyFunction(faker)
     except AttributeError:
-        generator = (lambda: mommy.generate_value(field, commit=False))
+        generator = lambda: mommy.generate_value(field, commit=False)
         return declarations.LazyFunction(generator)
 
 

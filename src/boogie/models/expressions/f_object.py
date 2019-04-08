@@ -34,7 +34,7 @@ class F(expressions.Combinable, metaclass=FMeta):
         self._name = name
 
     def __repr__(self):
-        return 'F.%s' % (self._name)
+        return "F.%s" % (self._name)
 
     def __str__(self):
         return self._name
@@ -42,10 +42,10 @@ class F(expressions.Combinable, metaclass=FMeta):
     def __getattr__(self, attr):
         return self.getattr(attr)
 
-    asc = delegate_to_f_object('asc')
-    desc = delegate_to_f_object('desc')
-    resolve_expression = delegate_to_f_object('resolve_expression')
-    default_alias = 'boogie.F'
+    asc = delegate_to_f_object("asc")
+    desc = delegate_to_f_object("desc")
+    resolve_expression = delegate_to_f_object("resolve_expression")
+    default_alias = "boogie.F"
 
     #
     # Comparison operators are not implemented by Combinable objects because
@@ -58,16 +58,16 @@ class F(expressions.Combinable, metaclass=FMeta):
     def __ne__(self, other):
         return ~(self == other)
 
-    __lt__ = lookup_method('lt')
-    __le__ = lookup_method('lte')
-    __gt__ = lookup_method('gt')
-    __ge__ = lookup_method('gte')
+    __lt__ = lookup_method("lt")
+    __le__ = lookup_method("lte")
+    __gt__ = lookup_method("gt")
+    __ge__ = lookup_method("gte")
     __pos__ = asc
     __neg__ = desc
-    __hash__ = (lambda self: hash(self._name))
+    __hash__ = lambda self: hash(self._name)
 
     def __len__(self):
-        msg = 'len() function not supported, please use F.%s.length() instead.'
+        msg = "len() function not supported, please use F.%s.length() instead."
         raise TypeError(msg % self._name)
 
     #
@@ -80,7 +80,7 @@ class F(expressions.Combinable, metaclass=FMeta):
         This method is necessary if attribute name conflicts with some method
         of the F class.
         """
-        return type(self)('%s__%s' % (self._name, attr))
+        return type(self)("%s__%s" % (self._name, attr))
 
     def cast(self, to_type):
         """
@@ -108,13 +108,13 @@ class F(expressions.Combinable, metaclass=FMeta):
         queries can be either slower (typically) or faster than an explicit
         lists depending on the situation and backend.
         """
-        return models.Q(**{self._name + '__in': values})
+        return models.Q(**{self._name + "__in": values})
 
     def in_range(self, start, end):
         """
         Check if value is within the given range.
         """
-        return models.Q(**{self._name + '__range': (start, end)})
+        return models.Q(**{self._name + "__range": (start, end)})
 
     #
     # Statistics
@@ -131,7 +131,7 @@ class F(expressions.Combinable, metaclass=FMeta):
         """
         Mean value of value.
         """
-        return setting_attrs(models.Avg(self._name), name='mean')
+        return setting_attrs(models.Avg(self._name), name="mean")
 
     def std(self, sample=False):
         """
@@ -198,7 +198,7 @@ class F(expressions.Combinable, metaclass=FMeta):
             case (bool):
                 Set to case=False to perform a case insensitive comparison.
         """
-        key = '%s__%s' % (self._name, 'exact' if case else 'iexact')
+        key = "%s__%s" % (self._name, "exact" if case else "iexact")
         return models.Q(**{key: value})
 
     def regex(self, regex, case=True):
@@ -214,7 +214,7 @@ class F(expressions.Combinable, metaclass=FMeta):
             case (bool):
                 Set to case=False to perform a case insensitive match.
         """
-        key = '%s__%s' % (self._name, 'regex' if case else 'iregex')
+        key = "%s__%s" % (self._name, "regex" if case else "iregex")
         return models.Q(**{key: regex})
 
     def startswith(self, prefix, case=True):
@@ -223,7 +223,7 @@ class F(expressions.Combinable, metaclass=FMeta):
 
         If case=False, performs a case insensitive match.
         """
-        key = '%s__%s' % (self._name, 'startswith' if case else 'istartswith')
+        key = "%s__%s" % (self._name, "startswith" if case else "istartswith")
         return models.Q(**{key: prefix})
 
     def endswith(self, suffix, case=True):
@@ -232,7 +232,7 @@ class F(expressions.Combinable, metaclass=FMeta):
 
         If case=False, performs a case insensitive match.
         """
-        key = '%s__%s' % (self._name, 'endswith' if case else 'iendswith')
+        key = "%s__%s" % (self._name, "endswith" if case else "iendswith")
         return models.Q(**{key: suffix})
 
     def has_substring(self, sub, case=True):
@@ -241,7 +241,7 @@ class F(expressions.Combinable, metaclass=FMeta):
 
         If case=False, performs a case insensitive search.
         """
-        key = '%s__%s' % (self._name, 'contains' if case else 'icontains')
+        key = "%s__%s" % (self._name, "contains" if case else "icontains")
         return models.Q(**{key: sub})
 
     #
@@ -257,14 +257,14 @@ class F(expressions.Combinable, metaclass=FMeta):
         """
         return functions.Now()
 
-    year = lookup_property('year')
-    month = lookup_property('month')
-    day = lookup_property('day')
-    week = lookup_property('week')
-    week_day = lookup_property('week_day')
-    hour = lookup_property('hour')
-    minute = lookup_property('minute')
-    second = lookup_property('second')
+    year = lookup_property("year")
+    month = lookup_property("month")
+    day = lookup_property("day")
+    week = lookup_property("week")
+    week_day = lookup_property("week_day")
+    hour = lookup_property("hour")
+    minute = lookup_property("minute")
+    second = lookup_property("second")
 
     def extract_from_datetime(self, lookup):
         """

@@ -14,8 +14,8 @@ def info(obj, log=print, full=False):
     Display detailed information about object.
     """
 
-    log('=' * 60)
-    log('Object:', obj)
+    log("=" * 60)
+    log("Object:", obj)
 
     # Print object state
     try:
@@ -23,7 +23,7 @@ def info(obj, log=print, full=False):
     except (AttributeError, TypeError):
         pass
     else:
-        log('\nDict')
+        log("\nDict")
         if full:
             pprint(dic)
         else:
@@ -32,27 +32,27 @@ def info(obj, log=print, full=False):
     # Print information about methods
     methods = []
     for attr, method in public_methods(obj):
-        doc = method.__doc__ or ''
+        doc = method.__doc__ or ""
         if doc:
-            methods.append(f'* {attr}: {first_line(doc)}')
+            methods.append(f"* {attr}: {first_line(doc)}")
         else:
-            methods.append(f'* {attr}')
+            methods.append(f"* {attr}")
     if methods:
-        log('\nMethods:')
-        print('\n'.join(methods))
-    log('-' * 60)
+        log("\nMethods:")
+        print("\n".join(methods))
+    log("-" * 60)
 
 
 def _log_values(log, values):
     # First print public values
     for k, v in values.items():
-        if not k.startswith('_'):
-            log(f'* {k}:', safe_repr(v, max_length=50))
+        if not k.startswith("_"):
+            log(f"* {k}:", safe_repr(v, max_length=50))
 
     # Then the private ones (only types)
     for k, v in values.items():
-        if k.startswith('_'):
-            log(f'* {k} ({v.__class__.__name__})')
+        if k.startswith("_"):
+            log(f"* {k} ({v.__class__.__name__})")
 
 
 #
@@ -76,8 +76,12 @@ def namespace():
     import boogie.debug as dbg
 
     return {
-        'info': info, 'log': print, 'pprint': pprint, 'set_trace': set_trace,
-        'embed': embed, 'dbg': dbg,
+        "info": info,
+        "log": print,
+        "pprint": pprint,
+        "set_trace": set_trace,
+        "embed": embed,
+        "dbg": dbg,
     }
 
 
@@ -101,7 +105,7 @@ def enable_debugging(auto=False):
 # Utility
 #
 def public_dir(obj):
-    return (attr for attr in dir(obj) if not attr.startswith('_'))
+    return (attr for attr in dir(obj) if not attr.startswith("_"))
 
 
 def public_vars(obj):

@@ -1,8 +1,8 @@
 from django.test import Client as DjangoClient
 from sidekick import import_later
 
-bs4 = import_later('bs4')
-Text = import_later('hyperpython:Text')
+bs4 = import_later("bs4")
+Text = import_later("hyperpython:Text")
 
 
 class Client(DjangoClient):
@@ -12,7 +12,7 @@ class Client(DjangoClient):
         of the usual response object.
         """
         response = self.get(*args, **kwargs)
-        if getattr(response, 'url', None):
+        if getattr(response, "url", None):
             return self.get_data(response.url, fix_links=fix_links)
 
         if fix_links:
@@ -35,11 +35,11 @@ class Client(DjangoClient):
         """
         soup = bs4.BeautifulSoup(self.get_data(*args, **kwargs))
         if fix_links:
-            add_href_prefix(soup, 'http://localhost:8000')
+            add_href_prefix(soup, "http://localhost:8000")
         return soup
 
 
 def add_href_prefix(soup, prefix):
-    for link in soup.find_all('a'):
-        if link['href'].starswith('/'):
-            link['href'] = prefix + link['href']
+    for link in soup.find_all("a"):
+        if link["href"].starswith("/"):
+            link["href"] = prefix + link["href"]

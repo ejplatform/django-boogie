@@ -5,7 +5,7 @@ from functools import update_wrapper
 
 from rules.predicates import Context, NO_VALUE, Predicate, _context
 
-from sidekick.operators import SYMBOLS
+from sidekick.core.operators import SYMBOLS
 
 
 def binary(op, reverse=False, symbol=None):
@@ -13,19 +13,20 @@ def binary(op, reverse=False, symbol=None):
 
     def binary_op(self, other):
         if isinstance(other, Value):
-            fn = (lambda *args: self._combine_binop(other, op, args))
-            name = f'{self.name} {symbol} {other.name}'
+            fn = lambda *args: self._combine_binop(other, op, args)
+            name = f"{self.name} {symbol} {other.name}"
             return Value(fn, name)
         else:
             transform = lambda x: op(x, other)
-            fn = (lambda *args: self._transform(transform, args))
-            name = f'{self.name} {symbol} {repr(other)}'
+            fn = lambda *args: self._transform(transform, args)
+            name = f"{self.name} {symbol} {repr(other)}"
             return Value(fn, name)
 
     if reverse:
+
         def rbinary_op(self, other):
-            fn = (lambda *args: self._transform(partial(op, other), args))
-            name = f'{self.name} {symbol} {repr(other)}'
+            fn = lambda *args: self._transform(partial(op, other), args)
+            name = f"{self.name} {symbol} {repr(other)}"
             return Value(fn, name)
 
         return rbinary_op
@@ -37,8 +38,8 @@ def unary(op, symbol):
     symbol = symbol or SYMBOLS.get(op, op.__name__)
 
     def unary(self):
-        fn = (lambda *args: self._transform(op, args))
-        name = f'{symbol} {self.name}'
+        fn = lambda *args: self._transform(op, args)
+        name = f"{symbol} {self.name}"
         return Value(fn, name)
 
     return unary
@@ -51,7 +52,12 @@ class Value:
         #   - fn(obj=None)
         #   - fn()
         if isinstance(fn, Value):
-            fn, num_args, var_args, name = fn.fn, fn.num_args, fn.var_args, name or fn.name
+            fn, num_args, var_args, name = (
+                fn.fn,
+                fn.num_args,
+                fn.var_args,
+                name or fn.name,
+            )
         elif isinstance(fn, partial):
             argspec = inspect.getfullargspec(fn.func)
             var_args = argspec.varargs is not None
@@ -68,17 +74,17 @@ class Value:
             var_args = argspec.varargs is not None
             num_args = len(argspec.args)
         elif callable(fn):
-            callfn = getattr(fn, '__call__')
+            callfn = getattr(fn, "__call__")
             argspec = inspect.getfullargspec(callfn)
             var_args = argspec.varargs is not None
             num_args = len(argspec.args) - 1  # skip `self`
             name = name or type(fn).__name__
         else:
-            raise TypeError('Incompatible value function.')
+            raise TypeError("Incompatible value function.")
         if bind:
             num_args -= 1
         if num_args > 2:
-            raise TypeError('Value function must receive at most 2 arguments')
+            raise TypeError("Value function must receive at most 2 arguments")
         self.fn = fn
         self.num_args = num_args
         self.var_args = var_args
@@ -87,7 +93,7 @@ class Value:
 
     def __repr__(self):
         type_name = type(self).__name__
-        return '<%s:%s object at %s>' % (type_name, self, hex(id(self)))
+        return "<%s:%s object at %s>" % (type_name, self, hex(id(self)))
 
     # Value is not a subclass of Predicate, but shares many functionality
     # We simply copy the common methods here.
@@ -126,7 +132,7 @@ class Value:
         elif self.num_args > len(args):
             callargs = args + (None,) * (self.num_args - len(args))
         else:
-            callargs = args[:self.num_args]
+            callargs = args[: self.num_args]
         if self.bind:
             callargs = (self,) + callargs
         return self.fn(*callargs)

@@ -10,7 +10,7 @@ class ValueMap(dict):
 
     def add_value(self, name, pred):
         if name in self:
-            raise KeyError('A rule with name `%s` already exists' % name)
+            raise KeyError("A rule with name `%s` already exists" % name)
         self[name] = pred
 
     def remove_value(self, name):
@@ -56,5 +56,5 @@ def get_value(name, default=NOT_GIVEN):
         return default_value_map[name]
     except KeyError:
         if default is NOT_GIVEN:
-            raise ValueError('could not find value: %s' % name)
+            raise ValueError("could not find value: %s" % name)
         return default

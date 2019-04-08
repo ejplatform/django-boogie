@@ -49,7 +49,7 @@ class WithLinksSerializerMixin(serializers.Serializer):
 
     @lazy
     def request(self):
-        return self.context['request']
+        return self.context["request"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,7 +57,7 @@ class WithLinksSerializerMixin(serializers.Serializer):
         # Define base urls
         request = self.request
         if request is None:
-            self.url_prefix = ''
+            self.url_prefix = ""
         else:
             self.url_prefix = get_url_prefix(request)
 
@@ -91,11 +91,11 @@ class WithLinksSerializerMixin(serializers.Serializer):
 
         for name, params in self.Meta.extra_kwargs.items():
             value = getattr(obj, name)
-            lookup_field = params['lookup_field']
+            lookup_field = params["lookup_field"]
             lookup_value = getattr(value, lookup_field)
 
             kwargs = {lookup_field: lookup_value}
-            view_name = params['view_name']
+            view_name = params["view_name"]
             url = reverse(view_name, kwargs=kwargs)
 
             links[name] = self.url_prefix + url
@@ -127,12 +127,12 @@ class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
 
         if self.base_name is None:
             cls = type(self)
-            name = '%s.%s' % (cls.__module__, cls.__qualname__)
+            name = "%s.%s" % (cls.__module__, cls.__qualname__)
             raise ImproperlyConfigured(
                 'Must provide a "base_name" value for the RestAPISerializer '
-                'subclass. %s does not define such class attribute.' % name
+                "subclass. %s does not define such class attribute." % name
             )
-        base_path = reverse(self.base_name + '-list')
+        base_path = reverse(self.base_name + "-list")
         self.base_url = join_url(self.url_prefix, base_path)
 
     def _inner_links(self, obj):
@@ -145,8 +145,8 @@ class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
         self_url = reverse(self.detail_url, kwargs=kwargs)
         self_url = self.url_prefix + self_url
 
-        extra = {action: f'{self_url}{action}/' for action in self.actions}
-        return {'self': self_url, **extra}
+        extra = {action: f"{self_url}{action}/" for action in self.actions}
+        return {"self": self_url, **extra}
 
     #
     # Overloads serializer methods
@@ -156,7 +156,7 @@ class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
         # manager.create() inside the method. This is essentially the
         # same method in ModelSerializer, but instead of creating the object
         # directly, it uses the save_hook method.
-        raise_errors_on_nested_writes('create', self, validated_data)
+        raise_errors_on_nested_writes("create", self, validated_data)
 
         model_class = self.Meta.model
 
@@ -173,12 +173,14 @@ class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
             instance = model_class(**validated_data)
         except TypeError:
             tb = traceback.format_exc()
-            msg = ('Got a `TypeError` when saving object. '
-                   'This may be because you have a writable field on the '
-                   'serializer class that is not a valid argument to the '
-                   'object constructor. You may need to make the field '
-                   'read-only, or register a save hook function to handle '
-                   'this correctly.\nOriginal exception was:\n %s' % tb)
+            msg = (
+                "Got a `TypeError` when saving object. "
+                "This may be because you have a writable field on the "
+                "serializer class that is not a valid argument to the "
+                "object constructor. You may need to make the field "
+                "read-only, or register a save hook function to handle "
+                "this correctly.\nOriginal exception was:\n %s" % tb
+            )
             raise TypeError(msg)
         else:
             instance = self.save_hook(self.request, instance)
@@ -192,7 +194,7 @@ class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        raise_errors_on_nested_writes('update', self, validated_data)
+        raise_errors_on_nested_writes("update", self, validated_data)
         info = model_meta.get_field_info(instance)
 
         # Simply set each attribute on the instance, and then save it.
@@ -216,8 +218,7 @@ class RestAPISerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
         return instance
 
 
-class RestAPIInlineSerializer(WithLinksSerializerMixin,
-                              serializers.ModelSerializer):
+class RestAPIInlineSerializer(WithLinksSerializerMixin, serializers.ModelSerializer):
     """
     Base serializer class for inline models.
     """

@@ -15,12 +15,12 @@ class Comparable(Combinable):
     """
 
     # Comparison connectors
-    GT = '>'
-    GTE = '>='
-    LT = '<'
-    LTE = '<='
-    EQ = '='
-    NEQ = '<>'
+    GT = ">"
+    GTE = ">="
+    LT = "<"
+    LTE = "<="
+    EQ = "="
+    NEQ = "<>"
 
     __gt__ = _method(GT)
     __lt__ = _method(LT)
@@ -55,5 +55,5 @@ def as_comparable(obj):
 def get_comparable_class(cls, doc=None):
     if issubclass(cls, Comparable):
         return cls
-    ns = {'__doc__': doc} if doc else {}
-    return type(cls.__name__ + 'Comparable', (Comparable, cls), ns)
+    ns = {"__doc__": doc} if doc else {}
+    return type(cls.__name__ + "Comparable", (Comparable, cls), ns)

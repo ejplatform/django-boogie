@@ -1,6 +1,6 @@
 from django.test import Client
 
-LOGIN_REGEX = r'^/login/*.$'
+LOGIN_REGEX = r"^/login/*.$"
 
 
 class UrlChecker:
@@ -8,8 +8,7 @@ class UrlChecker:
     Checks the response code for specific urls in an app.
     """
 
-    def __init__(self, urls, posts,
-                 login_regex=LOGIN_REGEX, client=None):
+    def __init__(self, urls, posts, login_regex=LOGIN_REGEX, client=None):
         self.client = client or Client()
         self.urls = urls or {}
         self.posts = posts or {}
@@ -37,7 +36,7 @@ class UrlChecker:
             url, codes = url
             return url, codes
         else:
-            raise TypeError(f'invalid url spec: {url} ({type(url).__name__})')
+            raise TypeError(f"invalid url spec: {url} ({type(url).__name__})")
 
     def collect_errors(self, urls, default_codes) -> dict:
         """
@@ -108,11 +107,11 @@ class UrlChecker:
         errors.update(self.check_login_required(urls))
 
         # Test permissions
-        if 'user' in users:
-            user = users['user']
+        if "user" in users:
+            user = users["user"]
             url_list = []
             for other_user, other_urls in urls.items():
-                if other_user not in (None, 'user'):
+                if other_user not in (None, "user"):
                     url_list.extend(other_urls)
             if url_list:
                 errors.update(self.check_restricted_pages(url_list, user))

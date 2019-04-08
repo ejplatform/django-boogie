@@ -15,7 +15,7 @@ class TemplateMixin:
     response_status: int = None
     template_engine: str = None
     template_name: str = None
-    template_extension: str = '.html'
+    template_extension: str = ".html"
     template_names: list = property(
         lambda self: [self.template_name] if self.template_name else []
     )
@@ -23,7 +23,7 @@ class TemplateMixin:
     @lazy
     def view_name(self):
         class_name = self.__class__.__name__
-        if class_name.endswith('View'):
+        if class_name.endswith("View"):
             class_name = class_name[:-4]
         # TODO: snake case!
         return class_name.lower()
@@ -38,11 +38,11 @@ class TemplateMixin:
             return names
 
         # If no template is given, try to infer it from the model
-        model = getattr(self, 'model', None)
+        model = getattr(self, "model", None)
         if model is None:
             app_label = model._meta.app_label
             ext = self.template_extension
-            return [f'{app_label}/{self.view_name}{ext}']
+            return [f"{app_label}/{self.view_name}{ext}"]
 
         # Give up!
         raise ImproperlyConfigured(
@@ -59,8 +59,8 @@ class TemplateMixin:
         to a dictionary with the arguments passed to the view function.
         """
         result = dict(self.context_extra or ())
-        result['view'] = self
-        result['view_args'] = kwargs
+        result["view"] = self
+        result["view_args"] = kwargs
         result.update(kwargs)
         return result
 
@@ -69,7 +69,7 @@ class TemplateMixin:
         Return a response, using the `render_function` for this view. Context
         is created with the get_context(request, **kwargs) method.
         """
-        context = getattr(request, 'context', None)
+        context = getattr(request, "context", None)
         if context is None:
             context = self.get_context(request, **kwargs)
 

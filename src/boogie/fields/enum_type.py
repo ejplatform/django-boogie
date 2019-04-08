@@ -12,8 +12,8 @@ class _EnumDict(enum._EnumDict):
         self._descriptions = []
 
     def __setitem__(self, key, value):
-        if key == 'description':
-            raise ValueError('invalid enum name')
+        if key == "description":
+            raise ValueError("invalid enum name")
         super().__setitem__(key, value)
 
         if self._member_names and self._member_names[-1] == key:
@@ -39,7 +39,9 @@ class EnumMeta(enum.EnumMeta):
         enum_dict = _EnumDict(meta.dtype)
         member_type, first_enum = meta._get_mixins_(bases)
         if first_enum is not None:
-            enum_dict['_generate_next_value_'] = getattr(first_enum, '_generate_next_value_', None)
+            enum_dict["_generate_next_value_"] = getattr(
+                first_enum, "_generate_next_value_", None
+            )
         return enum_dict
 
     def __new__(meta, name, bases, namespace):  # noqa: N804
@@ -67,7 +69,7 @@ class EnumMeta(enum.EnumMeta):
         cls._descriptions = dict(zip(names, descriptions))
         cls._values = dict(zip(names, values))
         for attr, descr in zip(names, descriptions):
-            setattr(cls, attr + '_DESCRIPTION', descr)
+            setattr(cls, attr + "_DESCRIPTION", descr)
             case = getattr(cls, attr)
             case._description = descr
             cls._descriptions[case] = descr
@@ -83,11 +85,10 @@ class EnumMeta(enum.EnumMeta):
         try:
             return cls._descriptions[value]
         except KeyError:
-            raise ValueError('not a member of enumeration: %r' % value)
+            raise ValueError("not a member of enumeration: %r" % value)
 
 
-class IntEnum(enum.IntEnum,
-              metaclass=type('IntEnumMeta', (EnumMeta,), {'dtype': int})):
+class IntEnum(enum.IntEnum, metaclass=type("IntEnumMeta", (EnumMeta,), {"dtype": int})):
     """
     A subclass of enum.IntEnum that accepts an optional human-friendly
     description field during declaration.
@@ -110,18 +111,23 @@ class IntEnum(enum.IntEnum,
         elif isinstance(obj, str):
             value = getattr(cls, obj.upper(), None)
             if value is None:
-                raise ValueError(f'invalid {cls.__name__}: {obj}')
+                raise ValueError(f"invalid {cls.__name__}: {obj}")
             return value
         elif isinstance(obj, int):
             return cls(obj)
         else:
             raise TypeError(type(obj))
 
+    def __html__(self):
+        return self.description
+
 
 class Enum(enum.Enum, metaclass=EnumMeta):
     """
     Similar to :class:`boogie.IntEnum`, but accepts any type of value.
     """
+
+    __html__ = IntEnum.__html__
 
     def __hash__(self):
         return hash(self.value)

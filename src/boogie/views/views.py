@@ -1,6 +1,11 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
-from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect, HttpResponseGone, Http404
+from django.http import (
+    HttpResponsePermanentRedirect,
+    HttpResponseRedirect,
+    HttpResponseGone,
+    Http404,
+)
 from django.urls import reverse
 from django.utils.translation import ugettext as _
 
@@ -31,9 +36,9 @@ class RedirectView(View):
         else:
             return None
 
-        query_args = request.META.get('QUERY_STRING', '')
+        query_args = request.META.get("QUERY_STRING", "")
         if query_args and self.query_string:
-            url = f'{url}?{query_args}'
+            url = f"{url}?{query_args}"
         return url
 
     def get(self, request, *args, **kwargs):
@@ -45,8 +50,7 @@ class RedirectView(View):
                 return HttpResponseRedirect(url)
         else:
             log.warning(
-                'Gone: %s', request.path,
-                extra={'status_code': 410, 'request': request}
+                "Gone: %s", request.path, extra={"status_code": 410, "request": request}
             )
             return HttpResponseGone()
 
@@ -57,12 +61,13 @@ class DetailView(TemplateMixin, View):
     """
     Provide the ability to retrieve a single object for further manipulation.
     """
+
     model = None
     queryset = None
-    slug_field = 'slug'
+    slug_field = "slug"
     context_object_name = None
-    slug_url_kwarg = 'slug'
-    pk_url_kwarg = 'pk'
+    slug_url_kwarg = "slug"
+    pk_url_kwarg = "pk"
     query_pk_and_slug = False
 
     def get_queryset(self, request, **kwargs):
@@ -79,9 +84,7 @@ class DetailView(TemplateMixin, View):
                 raise ImproperlyConfigured(
                     "%(cls)s is missing a QuerySet. Define "
                     "%(cls)s.model, %(cls)s.queryset, or override "
-                    "%(cls)s.get_queryset()." % {
-                        'cls': self.__class__.__name__
-                    }
+                    "%(cls)s.get_queryset()." % {"cls": self.__class__.__name__}
                 )
         return self.queryset.all()
 
@@ -111,16 +114,19 @@ class DetailView(TemplateMixin, View):
 
         # If none of those are defined, it's an error.
         if pk is None and slug is None:
-            raise AttributeError("Generic detail view %s must be called with "
-                                 "either an object pk or a slug."
-                                 % self.__class__.__name__)
+            raise AttributeError(
+                "Generic detail view %s must be called with "
+                "either an object pk or a slug." % self.__class__.__name__
+            )
 
         try:
             # Get the single item from the filtered queryset
             obj = queryset.get()
         except queryset.model.DoesNotExist:
-            raise Http404(_("No %(verbose_name)s found matching the query") %
-                          {'verbose_name': queryset.model._meta.verbose_name})
+            raise Http404(
+                _("No %(verbose_name)s found matching the query")
+                % {"verbose_name": queryset.model._meta.verbose_name}
+            )
         return obj
 
     def get_slug_field(self):
@@ -140,7 +146,7 @@ class DetailView(TemplateMixin, View):
         """Insert the single object into the context dict."""
         context = {}
         if self.object:
-            context['object'] = self.object
+            context["object"] = self.object
             context_object_name = self.get_context_object_name(self.object)
             if context_object_name:
                 context[context_object_name] = self.object
@@ -153,7 +159,7 @@ class DetailView(TemplateMixin, View):
         return self.render(context)
 
     template_name_field = None
-    template_name_suffix = '_detail'
+    template_name_suffix = "_detail"
 
     def get_template_names(self, request, **kwargs):
         """
@@ -170,9 +176,7 @@ class DetailView(TemplateMixin, View):
         except ImproperlyConfigured:
             # If template_name isn't specified, it's not a problem --
             # # we just start with an empty list.
-            names = [
-                *self.get_object_templates(request, **kwargs),
-            ]
+            names = [*self.get_object_templates(request, **kwargs)]
 
             # # If self.template_name_field is set, grab the value of the field
             # # of that name from the object; this is the most specific template

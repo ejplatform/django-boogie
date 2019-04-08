@@ -4,14 +4,28 @@ import re
 from collections import defaultdict
 
 import sidekick as sk
-from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
+from django.contrib.auth.decorators import (
+    login_required,
+    permission_required,
+    user_passes_test,
+)
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Model
 from django.http import HttpResponse, HttpResponseForbidden, Http404
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.views.decorators.cache import never_cache, cache_control
-from django.views.decorators.clickjacking import xframe_options_exempt, xframe_options_deny, xframe_options_sameorigin
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, requires_csrf_token, csrf_protect
+from django.views.decorators.clickjacking import (
+    xframe_options_exempt,
+    xframe_options_deny,
+    xframe_options_sameorigin,
+)
+from django.views.decorators.csrf import (
+    csrf_exempt,
+    ensure_csrf_cookie,
+    requires_csrf_token,
+    csrf_protect,
+)
 from django.views.decorators.gzip import gzip_page
 
 from .paths import register_model_converter, get_lookup_type
@@ -26,7 +40,7 @@ class Cte:
         return self.value
 
     def __repr__(self):
-        return 'Cte(%r)' % self.value
+        return "Cte(%r)" % self.value
 
 
 class ModelLookupMixin:
@@ -40,11 +54,11 @@ class ModelLookupMixin:
         if isinstance(lookup_field, defaultdict):
             self.lookup_field = lookup_field.copy()
         else:
-            self.lookup_field = to_default_dict(lookup_field or {}, 'pk')
+            self.lookup_field = to_default_dict(lookup_field or {}, "pk")
         if isinstance(lookup_type, defaultdict):
             self.lookup_type = lookup_type.copy()
         else:
-            self.lookup_type = to_default_dict(lookup_type or {}, 'str')
+            self.lookup_type = to_default_dict(lookup_type or {}, "str")
 
 
 class Route(ModelLookupMixin):
@@ -52,16 +66,32 @@ class Route(ModelLookupMixin):
     A route is a combination of a Django view + some url pattern.
     """
 
-    _default_redirect = staticmethod(user_passes_test(lambda x: False)
-                                     (lambda request: None))
+    _default_redirect = staticmethod(
+        user_passes_test(lambda x: False)(lambda request: None)
+    )
 
-    def __init__(self, path, func, name=None, method=None, template=None,
-                 login=False, perms=None, staff=False,
-                 cache=None, gzip=False, xframe=None, csrf=None,
-                 models=None, lookup_field='pk', lookup_type=None,
-                 decorators=(), login_url=None,
-                 perms_policy='default',
-                 missing_object_policy='default'):
+    def __init__(
+        self,
+        path,
+        func,
+        name=None,
+        method=None,
+        template=None,
+        login=False,
+        perms=None,
+        staff=False,
+        cache=None,
+        gzip=False,
+        xframe=None,
+        csrf=None,
+        models=None,
+        lookup_field="pk",
+        lookup_type=None,
+        decorators=(),
+        login_url=None,
+        perms_policy="default",
+        missing_object_policy="default",
+    ):
         super().__init__(models, lookup_field, lookup_type)
         self.path = path
         self.function = func
@@ -93,20 +123,20 @@ class Route(ModelLookupMixin):
         # use Django's standard @permission_required() mechanism.
         if isinstance(perms, str):
             perms = [perms]
-        complex, simple = sk.split_by(lambda x: ':' in x, perms or ())
+        complex, simple = sk.partition_at(lambda x: ":" in x, perms or ())
         self._simple_perms = tuple(simple)
 
         # Create a tuple of (obj, [list of perms]) for
         complex_perms = []
         for full_perm in complex:
-            perm, _, obj = full_perm.partition(':')
+            perm, _, obj = full_perm.partition(":")
 
             # Check if any object permissions were defined inconsistently
             if obj not in self.models:
                 raise ImproperlyConfigured(
-                    f'invalid permission detected: {obj!r} object is required in \n'
-                    f'{full_perm!r} permission, but it is not registered in this '
-                    f'route.'
+                    f"invalid permission detected: {obj!r} object is required in \n"
+                    f"{full_perm!r} permission, but it is not registered in this "
+                    f"route."
                 )
             complex_perms.append((perm, obj))
 
@@ -118,7 +148,7 @@ class Route(ModelLookupMixin):
         """
 
         function = as_request_function(self.function)
-        decorators = ['cache', 'gzip', 'xframe', 'csrf', 'decorators']
+        decorators = ["cache", "gzip", "xframe", "csrf", "decorators"]
         kwargs = {attr: getattr(self, attr) for attr in decorators}
 
         # Creates the default view function.
@@ -133,12 +163,12 @@ class Route(ModelLookupMixin):
 
         return view_function
 
-    def path_handler(self, prefix=''):
+    def path_handler(self, prefix="", path_prefix=""):
         """
         Returns a django.urls.path (or re_path) object that handles the given
         route.
         """
-        path_ = self.compatible_path()
+        path_ = self.compatible_path(path_prefix)
         return path(path_, self.view_function(), name=prefix + self.name)
 
     def prepare_response(self, result, request):
@@ -172,9 +202,13 @@ class Route(ModelLookupMixin):
 
         if self._test_user:
             user = request.user
-            if (self.login and not user.is_authenticated
-                    or self.staff and not user.is_staff
-                    or not user.has_perms(self._simple_perms)):
+            if (
+                self.login
+                and not user.is_authenticated
+                or self.staff
+                and not user.is_staff
+                or not user.has_perms(self._simple_perms)
+            ):
                 self.handle_permission_denied(request)
 
             for perm, obj_name in self._complex_perms:
@@ -182,30 +216,35 @@ class Route(ModelLookupMixin):
                 if not user.has_perm(perm, obj):
                     self.handle_permission_denied(request)
 
-    def compatible_path(self):
+    def compatible_path(self, path_prefix=""):
         """
         Convert a Boogie-style path specification to a valid Django path.
         """
-        path = self.path
+        path = path_prefix + self.path
 
         for name, model in self.models.items():
-            part = f'<model:{name}>'
+            if isinstance(model, type) and issubclass(model, Model):
+                queryset = None
+            else:
+                model, queryset = model.model, model
+
+            part = f"<model:{name}>"
             if part in path:
                 lookup_field = self.lookup_field[name]
                 lookup_type = self.lookup_type[name]
                 if lookup_type is None:
                     lookup_type = get_lookup_type(None, model, lookup_field)
-                converter = get_converter(model, lookup_field, lookup_type)
-                path = path.replace(part, f'<{converter}:{name}>')
+                converter = get_converter(model, lookup_field, lookup_type, queryset)
+                path = path.replace(part, f"<{converter}:{name}>")
 
         # Find unregistered models
-        if '<model:' in path:
-            m = re.search(r'<model:[^>]*>', path)
-            part = path[m.start():m.end()]
+        if "<model:" in path:
+            m = re.search(r"<model:[^>]*>", path)
+            part = path[m.start() : m.end()]
             name = part[7:-1]
             raise ImproperlyConfigured(
-                f'Could not find a model for {part}. Please pass the correct '
-                f'model for {name} in the models dictionary of the route.'
+                f"Could not find a model for {part}. Please pass the correct "
+                f"model for {name} in the models dictionary of the route."
             )
         return path
 
@@ -215,32 +254,32 @@ class Route(ModelLookupMixin):
         function is not found on the database.
         """
         policy = self.missing_object_policy
-        if policy in ('default', 404):
+        if policy in ("default", 404):
             raise Http404
-        elif policy in ('forbidden', 403):
+        elif policy in ("forbidden", 403):
             raise PermissionError
-        elif policy in ('redirect', 302, 303):
+        elif policy in ("redirect", 302, 303):
             raise HttpExceptional(self._default_redirect(request))
         elif isinstance(policy, int):
             raise HttpExceptional(status_code=policy)
         else:
-            raise ImproperlyConfigured('invalid policy')
+            raise ImproperlyConfigured("invalid policy")
 
     def handle_permission_denied(self, request):
         """
         Decide what to do if user does not have permission to see the page.
         """
         policy = self.perms_policy
-        if policy in ('default', 'redirect', 302, 303):
+        if policy in ("default", "redirect", 302, 303):
             raise HttpExceptional(self._default_redirect(request))
-        elif policy in ('forbidden', 403):
+        elif policy in ("forbidden", 403):
             raise PermissionError
-        elif policy in ('hide', 404):
+        elif policy in ("hide", 404):
             raise Http404
         elif isinstance(policy, int):
             raise HttpExceptional(status_code=policy)
         else:
-            raise ImproperlyConfigured('invalid permission policy')
+            raise ImproperlyConfigured("invalid permission policy")
 
 
 #
@@ -254,7 +293,7 @@ def as_request_function(function):
     """
     spec = inspect.getfullargspec(function)
 
-    if spec.args and spec.args[0] == 'request':
+    if spec.args and spec.args[0] == "request":
         return function
 
     @functools.wraps(function)
@@ -264,16 +303,24 @@ def as_request_function(function):
     return request_function
 
 
-def apply_decorators(view=None, login=False, staff=False, perms=None,  # noqa: C901
-                     cache=None, gzip=False, xframe=None, csrf=None,
-                     decorators=()):
+def apply_decorators(  # noqa: C901
+    view=None,
+    login=False,
+    staff=False,
+    perms=None,
+    cache=None,
+    gzip=False,
+    xframe=None,
+    csrf=None,
+    decorators=(),
+):
     """
     Apply decorators to view function. Can also be used as a decorator.
     """
 
     if view is None:
         kwargs = locals()
-        kwargs.pop('view')
+        kwargs.pop("view")
         return lambda view: apply_decorators(view, **kwargs)
 
     # Cache control
@@ -299,15 +346,15 @@ def apply_decorators(view=None, login=False, staff=False, perms=None,  # noqa: C
     # Security
     if xframe is False:
         view = xframe_options_exempt(view)
-    elif xframe == 'deny':
+    elif xframe == "deny":
         view = xframe_options_deny(view)
-    elif xframe == 'sameorigin':
+    elif xframe == "sameorigin":
         view = xframe_options_sameorigin(view)
     if csrf is False:
         view = csrf_exempt(view)
-    elif csrf == 'cookie':
+    elif csrf == "cookie":
         view = ensure_csrf_cookie(view)
-    elif csrf == 'token':
+    elif csrf == "token":
         view = requires_csrf_token(view)
     elif csrf is True:
         view = csrf_protect(view)
@@ -337,7 +384,7 @@ def normalize_lookup(field, name=None):
 def normalize_name(name, function=None):
     if name:
         return name
-    return function.__name__.replace('_', '-')
+    return function.__name__.replace("_", "-")
 
 
 def to_default_dict(value, default=None):
@@ -355,9 +402,12 @@ def to_default_dict(value, default=None):
 
 
 @functools.lru_cache(maxsize=256)
-def get_converter(model, lookup_field, lookup_type):
-    name = f'${model.__name__}.{lookup_field}-{lookup_type}'
-    register_model_converter(model, name, lookup_field, lookup_type)
+def get_converter(model, lookup_field, lookup_type, queryset):
+    if queryset is None:
+        name = f"${model.__name__}.{lookup_field}-{lookup_type}"
+    else:
+        name = f"${model.__name__}.{lookup_field}-{lookup_type}-{id(queryset)}"
+    register_model_converter(model, name, lookup_field, lookup_type, queryset)
     return name
 
 

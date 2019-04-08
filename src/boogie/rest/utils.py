@@ -37,11 +37,11 @@ def validation_error(err, status_code=403):
     Return a JSON message describing a validation error.
     """
     errors = err.messages
-    msg = {'status_code': status_code, 'error': True}
+    msg = {"status_code": status_code, "error": True}
     if len(errors) == 1:
-        msg['message'] = errors[0]
+        msg["message"] = errors[0]
     else:
-        msg['messages'] = errors
+        msg["messages"] = errors
     return msg
 
 
@@ -51,8 +51,8 @@ def natural_base_url(model):
     * Uses a plural form.
     * Convert CamelCase to dash-case.
     """
-    name = dash_case(model.__name__ + 's')
-    return humanize_name(name).replace(' ', '-')
+    name = dash_case(model.__name__ + "s")
+    return humanize_name(name).replace(" ", "-")
 
 
 #
@@ -65,7 +65,7 @@ def patch_rest_framework_json_encoder():
     """
     original = JSONEncoder.default
 
-    if getattr(original, 'patched', False):
+    if getattr(original, "patched", False):
         return
 
     def default(self, obj):
@@ -86,7 +86,7 @@ def to_json_default(obj):
     objects to JSON-compatible values.
     """
 
-    if hasattr(obj, '__json_default__'):
+    if hasattr(obj, "__json_default__"):
         return obj.__json_default__()
     else:
         typename = obj.__class__.__name__
@@ -108,8 +108,8 @@ def viewset_actions(actions):
 
     action_fields = {}
     for name, action in actions.items():
-        func = action['method']
-        args = action['args']
+        func = action["method"]
+        args = action["args"]
         action_fields[name] = action_method(func, name=name, **args)
     return action_fields
 
@@ -142,18 +142,18 @@ def action_method(function, is_method=False, detail=True, name=None, **kwargs):
 
     method.__name__ = name or function.__name__
     if name:
-        kwargs['url_path'] = name
+        kwargs["url_path"] = name
     method = action_decorator(detail=detail, **kwargs)(method)
     return method
 
 
 def with_model_cache(func):
-    attr = '_%s_cache' % func.__name__
+    attr = "_%s_cache" % func.__name__
 
     @wraps(func)
     def method(self, model):
         if self.version is None:
-            raise ValueError('cannot construct value if version is None')
+            raise ValueError("cannot construct value if version is None")
 
         try:
             cache = getattr(self, attr)

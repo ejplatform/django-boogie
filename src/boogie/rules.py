@@ -24,8 +24,9 @@ class Rules:
         Common implementation to test() and test_any()
         """
         model = self.model
-        return user.is_superuser or \
-            reducer(test(rule, user, model) for rule in rule_list)
+        return user.is_superuser or reducer(
+            test(rule, user, model) for rule in rule_list
+        )
 
     def test(self, user, *rules):
         """

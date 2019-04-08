@@ -35,8 +35,4 @@ class RestAPIBaseViewSet(viewsets.ModelViewSet):
 
 
 def wrap_permission_error(error):
-    return Response({
-        'error': 'permission',
-        'code': 403,
-        'message': str(error),
-    })
+    return Response({"error": "permission", "code": 403, "message": str(error)})

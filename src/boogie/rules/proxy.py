@@ -1,4 +1,4 @@
-from collections import Sequence, Mapping
+from collections.abc import Sequence, Mapping
 from functools import wraps
 
 from django.db.models import QuerySet
@@ -80,6 +80,7 @@ class CollectionProxy(Sequence):
     Acts as a proxy for a immutable collection of objects: i.e., attributes
     are augmented after iteration.
     """
+
     _args = lazy(lambda x: (x._user, x._values, x._perms, x._rules, x._kwargs))
 
     def __init__(self, obj, user, values, perms, rules, kwargs):

@@ -2,7 +2,7 @@ import sidekick as sk
 
 from .queryset import QuerySet
 
-wc = sk.import_later('wordcloud')
+wc = sk.import_later("wordcloud")
 
 
 class WordCloudQuerySet(QuerySet):
@@ -22,7 +22,7 @@ class WordCloudQuerySet(QuerySet):
         return word_cloud(self, fields=fields, **kwargs)
 
 
-def word_cloud(qs, fields=(), lang='en', sep='\n', stop_words=None, **kwargs):
+def word_cloud(qs, fields=(), lang="en", sep="\n", stop_words=None, **kwargs):
     """
     Creates a word-cloud object from queryset.
 

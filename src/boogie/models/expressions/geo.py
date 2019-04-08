@@ -9,6 +9,7 @@ class GeoAttribute:
     @lazy
     def _gis(self):
         import django.contrib.gis.db.models.functions as functions
+
         return functions
 
     def __init__(self, f_expr):
@@ -16,7 +17,7 @@ class GeoAttribute:
         self.name = f_expr.name
 
     def __repr__(self):
-        return 'F.%s.geo' % self.name
+        return "F.%s.geo" % self.name
 
     # Gis properties
     area = property(lambda self: self._gis.Area)

@@ -1,4 +1,5 @@
-from collections import defaultdict, MutableMapping
+from collections import defaultdict
+from collections.abc import MutableMapping
 
 CONF_PARAMS = defaultdict(dict)
 GLOBAL_PARAMS = defaultdict(dict)

@@ -6,11 +6,11 @@ from html.parser import HTMLParser
 from django.test.client import Client
 
 # Utility functions
-cte = (lambda x: lambda *args: x)
-choose = (lambda cond, do, other: do if cond else other)
+cte = lambda x: lambda *args: x
+choose = lambda cond, do, other: do if cond else other
 
 
-def crawl(url='/', skip_patterns=(), skip_urls=(), errors=(), user=None, log=print):
+def crawl(url="/", skip_patterns=(), skip_urls=(), errors=(), user=None, log=print):
     """
     Crawl website starting from the given base url and return a dictionary with
     all pages with invalid status codes (e.g. 404, 500, etc)
@@ -39,11 +39,13 @@ def crawl(url='/', skip_patterns=(), skip_urls=(), errors=(), user=None, log=pri
 
     # Control urls that should be included/excluded from analysis
     skip_urls = set(skip_urls)
-    skip_match = re.compile('|'.join(skip_patterns)).match
-    errors_re = re.compile('|'.join(errors))
-    keep = choose(skip_patterns or skip_urls,
-                  lambda x: (x not in skip_urls) and (not skip_match(x)),
-                  cte(True))
+    skip_match = re.compile("|".join(skip_patterns)).match
+    errors_re = re.compile("|".join(errors))
+    keep = choose(
+        skip_patterns or skip_urls,
+        lambda x: (x not in skip_urls) and (not skip_match(x)),
+        cte(True),
+    )
     is_error = choose(errors, lambda x: errors_re.match(x), cte(False))
     log = log or cte(None)
 
@@ -60,7 +62,7 @@ def crawl(url='/', skip_patterns=(), skip_urls=(), errors=(), user=None, log=pri
 
         response = client.get(url)
         code = response.status_code
-        log(f'visited: {url} (code {code})')
+        log(f"visited: {url} (code {code})")
         visited[url] = code
 
         if code == 200:
@@ -74,12 +76,12 @@ def crawl(url='/', skip_patterns=(), skip_urls=(), errors=(), user=None, log=pri
         elif code in (301, 302):
             pending.append(response.url)
         else:
-            errors[url] = referrals.get(url, '') + f' (status code: {code})'
+            errors[url] = referrals.get(url, "") + f" (status code: {code})"
 
     return errors, visited
 
 
-def check_link_errors(*args, visit=(), user='user', **kwargs):
+def check_link_errors(*args, visit=(), user="user", **kwargs):
     """
     Craw site starting from the given base URL and raise an error if the
     resulting error dictionary is not empty.
@@ -90,13 +92,13 @@ def check_link_errors(*args, visit=(), user='user', **kwargs):
     errors, visited = crawl(*args, **kwargs)
     for url in visit:
         if url not in visited:
-            errors[url] = f'URL was not visited by {user}'
+            errors[url] = f"URL was not visited by {user}"
     if errors:
         for url, code in errors.items():
             if isinstance(code, int):
-                print(f'URL {url} returned invalid status code: {code}')
+                print(f"URL {url} returned invalid status code: {code}")
             else:
-                print(f'Invalid URL {url} encountered at {code}')
+                print(f"Invalid URL {url} encountered at {code}")
         raise AssertionError(errors, visited)
     return visited
 
@@ -105,9 +107,9 @@ def check_link_errors(*args, visit=(), user='user', **kwargs):
 # Utility
 #
 class HTMLAnchorFinder(HTMLParser):
-    SKIP_VALUE_RE = re.compile(r'http://|https://|#.*|^$')
+    SKIP_VALUE_RE = re.compile(r"http://|https://|#.*|^$")
 
-    def __init__(self, data=None, current='/'):
+    def __init__(self, data=None, current="/"):
         super().__init__()
         if data is None:
             data = set()
@@ -117,12 +119,12 @@ class HTMLAnchorFinder(HTMLParser):
     def handle_starttag(self, tag, attrs):
         regex = self.SKIP_VALUE_RE
 
-        if tag != 'a':
+        if tag != "a":
             return
 
         for name, href in attrs:
-            if name == 'href' and regex.match(href) is None:
-                if not href.startswith('/'):
+            if name == "href" and regex.match(href) is None:
+                if not href.startswith("/"):
                     href = self.current + href
                 self.data.add(href)
 
@@ -133,7 +135,7 @@ class HTMLAnchorFinder(HTMLParser):
         return iter(self.data)
 
 
-def find_urls(src, base_path='/'):
+def find_urls(src, base_path="/"):
     """
     Find all internal href values in the given source code.
 

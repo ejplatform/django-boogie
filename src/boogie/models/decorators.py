@@ -31,9 +31,9 @@ def manager_only(method=None):
         return manager_only
 
     name = method.__name__
-    msg = 'this method cannot be used from a queryset.'
-    if name != '<lambda>':
-        msg = '{name} method cannot be used from a queryset.'
+    msg = "this method cannot be used from a queryset."
+    if name != "<lambda>":
+        msg = "{name} method cannot be used from a queryset."
 
     @wraps(method)
     def decorated(self, *args, **kwargs):

@@ -19,7 +19,7 @@ def render_response(obj):
         html = render_html(obj)
     except TypeError:
         if settings.DEBUG:
-            msg = f'bad result from a view function: {repr(obj)}'
+            msg = f"bad result from a view function: {repr(obj)}"
             return HttpResponseServerError(msg)
         else:
             return HttpResponseServerError()
@@ -50,7 +50,7 @@ def dump_html(obj, file):
     Write HTML representation of object in the given file handler.
     """
     type_name = obj.__class__.__name__
-    raise TypeError(f'cannot convert {type_name} to html')
+    raise TypeError(f"cannot convert {type_name} to html")
 
 
 #
@@ -61,6 +61,7 @@ try:
 except ImportError:
     pass
 else:
+
     @dump_html.register(Element)
     @dump_html.register(Text)
     def _(x, fd):

@@ -4,9 +4,9 @@ try:
     import rest_framework as _rest
 except ImportError:
     raise ImproperlyConfigured(
-        'boogie.rest requires Django Rest Framework and some additional '
-        'packages to be installed. Please install it using pip install '
-        'django-boogie[rest].'
+        "boogie.rest requires Django Rest Framework and some additional "
+        "packages to be installed. Please install it using pip install "
+        "django-boogie[rest]."
     )
 
 from .rest_api import RestAPI
