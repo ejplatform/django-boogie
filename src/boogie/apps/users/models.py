@@ -25,25 +25,23 @@ class AbstractUser(auth.AbstractUser, models.Model):
 
     This is the abstract version of the model. Use it for subclassing.
     """
+
     name = models.CharField(
-        _('Name'),
-        max_length=255,
-        default='',
-        help_text=_('User\'s full name'),
+        _("Name"), max_length=255, default="", help_text=_("User's full name")
     )
 
-    first_name = sk_property(this.name.partition(' ')[0])
-    last_name = sk_property(this.name.partition(' ')[-1])
+    first_name = sk_property(this.name.partition(" ")[0])
+    last_name = sk_property(this.name.partition(" ")[-1])
 
     @first_name.setter
     def first_name(self, value):
-        pre, _, post = self.name.partition(' ')
-        self.name = f'{value} {post}' if post else value
+        pre, _, post = self.name.partition(" ")
+        self.name = f"{value} {post}" if post else value
 
     @last_name.setter
     def last_name(self, value):
-        pre, _, post = self.name.partition(' ')
-        self.name = f'{pre} {value}' if post else value
+        pre, _, post = self.name.partition(" ")
+        self.name = f"{pre} {value}" if post else value
 
     objects = UserManager()
 
@@ -65,6 +63,6 @@ class User(AbstractUser):
     """
 
     class Meta(auth.User.Meta):
-        swappable = 'AUTH_USER_MODEL'
-        if not apps.is_installed('boogie.apps.users'):
-            app_label = 'boogie_users'
+        swappable = "AUTH_USER_MODEL"
+        if not apps.is_installed("boogie.apps.users"):
+            app_label = "boogie_users"
