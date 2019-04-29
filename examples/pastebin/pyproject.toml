@@ -1,0 +1,10 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "pastebin"
+author = "Fábio Macêdo Mendes"
+author-email = "fabiomacedomendes@gmail.com"
+classifiers = ["License :: OSI Approved :: MIT License"]
+
