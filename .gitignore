@@ -28,3 +28,4 @@ src/__init__.py
 # Private data
 local/src/boogie/apps/tasks/
 local/
+.mypy_cache

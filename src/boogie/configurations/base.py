@@ -4,16 +4,19 @@ import logging
 import os
 import sys
 from importlib import import_module
+from typing import Union, Optional
 
 from django.core.exceptions import ImproperlyConfigured
 
 from .descriptors import Env
 
 log = logging.getLogger("boogie")
+ModuleType = type(sys)
+ConfModule = Union[str, dict, ModuleType]
 NOT_GIVEN = object()
 
 
-def save_configuration(conf_class, where=None):
+def save_configuration(conf_class: type, where: Optional[ConfModule] = None):
     """
     Prepare Django to receive the current configurations. This function is
     usually called at the end of the configuration module and it creates an
@@ -98,8 +101,8 @@ class Conf:
         if self.ENVFILE:
             self.env.read_env(self.ENVFILE)
 
-    def finalize(self, settings):
-        """
+    def finalize(self, settings: dict) -> dict:
+        """s
         A hook that receives a settings dictionary and returns the final
         output of the get_settings() method.
 
@@ -107,7 +110,7 @@ class Conf:
         """
         return settings
 
-    def load_settings(self):
+    def load_settings(self) -> dict:
         """
         Return a dictionary with all settings defined by the configuration.
 

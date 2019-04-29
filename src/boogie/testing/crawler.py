@@ -124,6 +124,7 @@ class HTMLAnchorFinder(HTMLParser):
 
         for name, href in attrs:
             if name == "href" and regex.match(href) is None:
+                href = href.strip()
                 if not href.startswith("/"):
                     href = self.current + href
                 self.data.add(href)

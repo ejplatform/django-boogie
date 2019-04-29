@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import pytest
+from django.urls import reverse
 from pytest import raises
 
 from boogie.router import Router
@@ -18,8 +19,6 @@ class TestRouter:
         route = router.register(lambda book: None)
         assert isinstance(route.lookup_field, defaultdict)
         assert isinstance(route.lookup_type, defaultdict)
-        print(router.lookup_field)
-        print(route.lookup_field)
         assert route.lookup_field['book'] == 'title'
         assert route.lookup_type['book'] == 'slug'
 
@@ -50,6 +49,33 @@ class TestAppUrlTester(UrlTester):
         'author': [],
         'admin': [],
     }
+
+    def test_url_data(self, client):
+        response = client.get('/hello/')
+        assert response.content == b'&lt;Hello World&gt;'
+
+        response = client.get('/hello/someone/')
+        assert response.content == b'Hello someone!'
+
+        response = client.get('/hello/someone.json')
+        assert response.json() == {"message": "hello", "name": "someone"}
+        assert response.content == b'{"message": "hello", "name": "someone"}'
+
+        response = client.get('/hello/response/someone/')
+        assert response.content == b'Hello someone'
+
+    def test_routes_that_touch_db(self, client, book):
+        # Get url that uses model
+        response = client.get(f'/book/{book.id}/')
+        assert response.content == b'Book (Author)'
+
+        # 404 for non-existing models
+        response = client.get(f'/book/42/')
+        assert response.status_code == 404
+
+        # Url reverse
+        assert reverse('book', kwargs={'book': book}) == '/book/1/'
+        assert reverse('book', kwargs={'book': '42'}) == '/book/42/'
 
 
 class TestAppUrlTesterFailure(UrlTester):

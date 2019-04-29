@@ -1,18 +1,19 @@
 from collections import OrderedDict
-from collections.abc import Sequence
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponseBadRequest
-
 from sidekick import lazy
+
 from .route import Route, normalize_name, ModelLookupMixin, to_default_dict
+
+not_given = object()
 
 
 # Django makes an instance check to see if urlpatterns is a list of path
 # declarations. We inherit from list, but implement all methods using
 # collections.Sequence. This is necessary since urls are only created after
 # initialization of the Router.urls attribute.
-class Router(ModelLookupMixin, Sequence, list):
+class Router(ModelLookupMixin, list):
     """
     A collection of routes.
 
@@ -46,14 +47,14 @@ class Router(ModelLookupMixin, Sequence, list):
     xframe = property(lambda self: self.extra_args["xframe"])
 
     def __init__(
-        self,
-        base_name="",
-        base_path="",
-        template=None,
-        models=None,
-        lookup_field=None,
-        lookup_type=None,
-        **kwargs,
+            self,
+            base_name="",
+            base_path="",
+            template=None,
+            models=None,
+            lookup_field=None,
+            lookup_type=None,
+            **kwargs,
     ):
         list.__init__(self)
         ModelLookupMixin.__init__(self, models, lookup_field, lookup_type)
@@ -75,6 +76,18 @@ class Router(ModelLookupMixin, Sequence, list):
     def __getitem__(self, item):
         return self.urls[item]
 
+    def __contains__(self, value):
+        return value in self.urls
+
+    def __reversed__(self):
+        return reversed(self.urls)
+
+    def index(self, *args, **kwargs):
+        return self.urls.index(*args, **kwargs)
+
+    def count(self, value):
+        return self.urls.count(value)
+
     def route(self, path="", name=None, **kwargs):
         """
         Register a route from function. Users should provide a path and can
@@ -88,7 +101,7 @@ class Router(ModelLookupMixin, Sequence, list):
 
         return decorator
 
-    def register(self, function, path="", name=None, template=None, **kwargs):
+    def register(self, func, path="", name=None, template=not_given, **kwargs):
         """
         Register a function as a route.
 
@@ -103,12 +116,15 @@ class Router(ModelLookupMixin, Sequence, list):
             path = self.routes[-1].path
 
         # Check if should use the parent template or not
-        name = normalize_name(name, function)
-        if template is None and self.template is not None:
-            if isinstance(self.template, str):
-                template = self.template.format(name=name)
+        name = normalize_name(name, func)
+        if template is not_given:
+            if self.template is not None:
+                if isinstance(self.template, str):
+                    template = self.template.format(name=name)
+                else:
+                    template = [x.format(name=name) for x in self.template]
             else:
-                template = [x.format(name=name) for x in self.template]
+                template = None
         kwargs["name"] = name
         kwargs["template"] = template
 
@@ -120,13 +136,13 @@ class Router(ModelLookupMixin, Sequence, list):
 
         # Create a Route object
         kwargs = dict(self.extra_args, **kwargs)
-        route = Route(path, function, **kwargs)
+        route = Route(path, func, **kwargs)
         self.routes.append(route)
 
         # Save route to the list of registered routes
         try:
-            routes = getattr(function, "routes", [])
-            function.registered_routes = [*routes, route]
+            routes = getattr(func, "routes", [])
+            func.registered_routes = [*routes, route]
         except AttributeError:
             pass
 

@@ -4,16 +4,17 @@ import re
 from collections import defaultdict
 
 import sidekick as sk
+from django.conf import settings
 from django.contrib.auth.decorators import (
     login_required,
     permission_required,
-    user_passes_test,
 )
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 from django.http import HttpResponse, HttpResponseForbidden, Http404
-from django.shortcuts import render, redirect
-from django.urls import path
+from django.http.response import HttpResponseBase
+from django.shortcuts import render, redirect, resolve_url
+from django.urls import path as url_path
 from django.views.decorators.cache import never_cache, cache_control
 from django.views.decorators.clickjacking import (
     xframe_options_exempt,
@@ -66,31 +67,37 @@ class Route(ModelLookupMixin):
     A route is a combination of a Django view + some url pattern.
     """
 
-    _default_redirect = staticmethod(
-        user_passes_test(lambda x: False)(lambda request: None)
-    )
+    redirect_field_name = 'next'
+    login_url = None
+
+    def _default_redirect(self, request):
+        from django.contrib.auth.views import redirect_to_login
+
+        return redirect_to_login(request.path,
+                                 resolve_url(self.login_url or settings.LOGIN_URL),
+                                 self.redirect_field_name)
 
     def __init__(
-        self,
-        path,
-        func,
-        name=None,
-        method=None,
-        template=None,
-        login=False,
-        perms=None,
-        staff=False,
-        cache=None,
-        gzip=False,
-        xframe=None,
-        csrf=None,
-        models=None,
-        lookup_field="pk",
-        lookup_type=None,
-        decorators=(),
-        login_url=None,
-        perms_policy="default",
-        missing_object_policy="default",
+            self,
+            path,
+            func,
+            name=None,
+            method=None,
+            template=None,
+            login=False,
+            perms=None,
+            staff=False,
+            cache=None,
+            gzip=False,
+            xframe=None,
+            csrf=None,
+            models=None,
+            lookup_field="pk",
+            lookup_type=None,
+            decorators=(),
+            login_url=None,
+            perms_policy="default",
+            missing_object_policy="default",
     ):
         super().__init__(models, lookup_field, lookup_type)
         self.path = path
@@ -123,12 +130,12 @@ class Route(ModelLookupMixin):
         # use Django's standard @permission_required() mechanism.
         if isinstance(perms, str):
             perms = [perms]
-        complex, simple = sk.separate(lambda x: ":" in x, perms or ())
+        complex_, simple = sk.separate(lambda x: ":" in x, perms or ())
         self._simple_perms = tuple(simple)
 
         # Create a tuple of (obj, [list of perms]) for
         complex_perms = []
-        for full_perm in complex:
+        for full_perm in complex_:
             perm, _, obj = full_perm.partition(":")
 
             # Check if any object permissions were defined inconsistently
@@ -147,16 +154,16 @@ class Route(ModelLookupMixin):
         Return a function that respects Django's view function contract.
         """
 
-        function = as_request_function(self.function)
+        func = as_request_function(self.function)
         decorators = ["cache", "gzip", "xframe", "csrf", "decorators"]
         kwargs = {attr: getattr(self, attr) for attr in decorators}
 
         # Creates the default view function.
         @apply_decorators(**kwargs)
-        def view_function(request, **kwargs):
+        def view_function(request, **kwds):
             try:
-                self.prepare_arguments(request, kwargs)
-                result = function(request, **kwargs)
+                self.prepare_arguments(request, kwds)
+                result = func(request, **kwds)
                 return self.prepare_response(result, request)
             except HttpExceptional as exc:
                 return exc.get_response()
@@ -169,7 +176,7 @@ class Route(ModelLookupMixin):
         route.
         """
         path_ = self.compatible_path(path_prefix)
-        return path(path_, self.view_function(), name=prefix + self.name)
+        return url_path(path_, self.view_function(), name=prefix + self.name)
 
     def prepare_response(self, result, request):
         """
@@ -177,7 +184,7 @@ class Route(ModelLookupMixin):
         function.
         """
         # Regular http responses
-        if isinstance(result, HttpResponse):
+        if isinstance(result, HttpResponseBase):
             return result
 
         # Template context
@@ -203,11 +210,11 @@ class Route(ModelLookupMixin):
         if self._test_user:
             user = request.user
             if (
-                self.login
-                and not user.is_authenticated
-                or self.staff
-                and not user.is_staff
-                or not user.has_perms(self._simple_perms)
+                    self.login
+                    and not user.is_authenticated
+                    or self.staff
+                    and not user.is_staff
+                    or not user.has_perms(self._simple_perms)
             ):
                 self.handle_permission_denied(request)
 
@@ -225,8 +232,10 @@ class Route(ModelLookupMixin):
         for name, model in self.models.items():
             if isinstance(model, type) and issubclass(model, Model):
                 queryset = None
-            else:
+            elif isinstance(model, QuerySet):
                 model, queryset = model.model, model
+            else:
+                raise TypeError(f'invalid model: {model}')
 
             part = f"<model:{name}>"
             if part in path:
@@ -240,7 +249,7 @@ class Route(ModelLookupMixin):
         # Find unregistered models
         if "<model:" in path:
             m = re.search(r"<model:[^>]*>", path)
-            part = path[m.start() : m.end()]
+            part = path[m.start(): m.end()]
             name = part[7:-1]
             raise ImproperlyConfigured(
                 f"Could not find a model for {part}. Please pass the correct "
@@ -285,34 +294,35 @@ class Route(ModelLookupMixin):
 #
 # Auxiliary functions
 #
-def as_request_function(function):
+def as_request_function(func):
     """
     Inspect to check if function receives a request as first parameter and
     return either the original function (if it expects a request) or a
     transformed function that omits the first parameter.
     """
-    spec = inspect.getfullargspec(function)
+    spec = inspect.getfullargspec(func)
 
     if spec.args and spec.args[0] == "request":
-        return function
+        return func
 
-    @functools.wraps(function)
+    # noinspection PyUnusedLocal
+    @functools.wraps(func)
     def request_function(request, *args, **kwargs):
-        return function(*args, **kwargs)
+        return func(*args, **kwargs)
 
     return request_function
 
 
 def apply_decorators(  # noqa: C901
-    view=None,
-    login=False,
-    staff=False,
-    perms=None,
-    cache=None,
-    gzip=False,
-    xframe=None,
-    csrf=None,
-    decorators=(),
+        view=None,
+        login=False,
+        staff=False,
+        perms=None,
+        cache=None,
+        gzip=False,
+        xframe=None,
+        csrf=None,
+        decorators=(),
 ):
     """
     Apply decorators to view function. Can also be used as a decorator.
@@ -321,7 +331,7 @@ def apply_decorators(  # noqa: C901
     if view is None:
         kwargs = locals()
         kwargs.pop("view")
-        return lambda view: apply_decorators(view, **kwargs)
+        return lambda view_func: apply_decorators(view_func, **kwargs)
 
     # Cache control
     if cache is False:
@@ -381,10 +391,10 @@ def normalize_lookup(field, name=None):
     return field.get(name)
 
 
-def normalize_name(name, function=None):
+def normalize_name(name, func=None):
     if name:
         return name
-    return function.__name__.replace("_", "-")
+    return func.__name__.replace("_", "-")
 
 
 def to_default_dict(value, default=None):

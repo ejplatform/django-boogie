@@ -28,7 +28,7 @@ def render_response(obj):
 
 
 @render_response.register(str)
-def _(st):
+def _render_str(st):
     return HttpResponse(html.escape(st))
 
 
@@ -64,10 +64,10 @@ else:
 
     @dump_html.register(Element)
     @dump_html.register(Text)
-    def _(x, fd):
+    def _dump_element(x, fd):
         x.dump(fd)
 
     @render_response.register(Element)
     @render_response.register(Text)
-    def _(x):
+    def _render_element(x):
         return HttpResponse(str(x))

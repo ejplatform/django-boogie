@@ -50,8 +50,9 @@ class ModelConverterBase:
         return getattr(model, self.lookup_field)
 
 
+# noinspection PyProtectedMember
 def register_model_converter(
-    model, type_name, lookup_field="pk", lookup_type=None, queryset=None
+        model, type_name, lookup_field="pk", lookup_type=None, queryset=None
 ):
     """
     Register a converter for the given model.
@@ -91,6 +92,7 @@ def register_model_converter(
     register_converter(converter, type_name)
 
 
+# noinspection PyProtectedMember
 def get_lookup_type(kind, model, field_name):
     if kind is not None:
         return kind

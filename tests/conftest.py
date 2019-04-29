@@ -25,6 +25,10 @@ def user(db):
     return factory(User).create()
 
 
+book = pytest.fixture(factories.book)
+author = pytest.fixture(factories.author)
+
+
 @pytest.fixture
 def admin(db):
     user = factory(User).create()
