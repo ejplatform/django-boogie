@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('pastebin', '0001_initial'),
+        ('dontpad', '0001_initial'),
     ]
 
     operations = [

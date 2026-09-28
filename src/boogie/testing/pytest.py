@@ -420,8 +420,6 @@ class ModelTester:
 #
 # Utility
 #
-
-
 def make_test_class(model_tester, instance):
     """
     Return a string with a plausible source code representation for a

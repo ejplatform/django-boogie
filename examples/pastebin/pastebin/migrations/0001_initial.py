@@ -7,6 +7,7 @@ import django.utils.timezone
 import model_utils.fields
 import pastebin.enums
 import pastebin.models
+import pastebin.validators
 
 
 class Migration(migrations.Migration):
@@ -23,7 +24,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),
                 ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
-                ('file_name', models.CharField(max_length=40, validators=[pastebin.models.check_valid_file_name], verbose_name='File name')),
+                ('file_name', models.CharField(max_length=40, validators=[
+                    pastebin.validators.check_valid_file_name], verbose_name='File name')),
                 ('file_type', boogie.fields.enum_field.EnumField(pastebin.enums.Format, max_length=4, verbose_name='File type')),
                 ('content', models.TextField(verbose_name='Contents')),
             ],
@@ -33,7 +35,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('full_path', models.CharField(max_length=300, unique=True, verbose_name='Full path')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='children', to='pastebin.Path')),
+                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='children', to='dontpad.Path')),
             ],
             options={
                 'abstract': False,
@@ -42,7 +44,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='paste',
             name='path',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='files', to='pastebin.Path'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='files', to='dontpad.Path'),
         ),
         migrations.AlterUniqueTogether(
             name='paste',

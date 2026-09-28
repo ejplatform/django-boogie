@@ -1,27 +1,12 @@
-from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from model_utils.models import TimeStampedModel
 
 from boogie import models
 from boogie.rest import rest_api
 from .enums import Format
+from .validators import check_valid_file_name
 
 
-def check_valid_file_name(name):
-    if '/' in name:
-        raise ValidationError(_(f'invalid file name: {name}'))
-    if not name:
-        raise ValidationError(_('Empty name'))
-
-
-def check_valid_path(name):
-    if not name.endswith('/'):
-        raise ValidationError(_(f'path must end with an /'))
-    if not name.startswith('/'):
-        raise ValidationError(_(f'path must start with an /'))
-
-
-@rest_api(['full_path'])
 class Path(models.Model):
     """
     Represent a path under which a file is saved.
@@ -33,7 +18,7 @@ class Path(models.Model):
         on_delete=models.CASCADE,
         related_name='children',
     )
-    full_path = models.CharField(
+    name = models.CharField(
         _('Full path'),
         max_length=300,
         unique=True,
@@ -44,46 +29,88 @@ class Path(models.Model):
         verbose_name_plural = _('Paths')
 
     def __str__(self):
-        return self.full_path
+        return self.name
 
-    def children(self, value):
+    def child(self, name: str):
         """
         Return a new child for the given path.
         """
+        path = f'{self.name}{name}/'
+        obj, _ = Path.objects.get_or_create(parent=self, name=path)
+        return obj
 
-    def paste(self, name, content):
+    def paste(self, name, content, *, commit=True, **kwargs):
         """
         Create a new paste with the given file name and content.
         """
+        paste = Paste(parent=self, name=name, content=content, **kwargs)
+        if commit:
+            paste.save()
+        return paste
 
 
-@rest_api(['content', 'file_type'])
+@rest_api(['path', 'content', 'content_type'])
 class Paste(TimeStampedModel):
     """
     Represents a single paste.
     """
-    path = models.ForeignKey(
+    parent = models.ForeignKey(
         'Path',
         on_delete=models.CASCADE,
         related_name='files',
     )
-    file_name = models.NameField(
+    name = models.NameField(
         _('File name'),
         validators=[check_valid_file_name],
     )
-    file_type = models.EnumField(Format, _('File type'))
-    content = models.TextField(_('Contents'))
-    full_name = property(str)
+    content_type = models.EnumField(Format, _('Content type'))
+    content = models.TextField(_('Source code'))
+    email = models.EmailField(_('Recovery e-mail'), blank=True)
+    password = models.CharField(_('Password'), blank=True, max_length=256)
+    path = property(str)
 
     class Meta:
-        unique_together = ('path', 'file_name')
+        unique_together = ('parent', 'file_name')
         verbose_name = _('Paste')
         verbose_name_plural = _('Pastes')
 
     def __str__(self):
-        return f'{self.path}{self.file_name}'
+        return f'{self.parent}{self.file_name}'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.content_type:
+            self.content_type = content_type(self.name)
 
 
-@rest_api.property(Paste)
-def name(paste):
-    return paste.full_name
+def path(name: str):
+    """
+    Return a path object for the given path.
+    """
+
+    if name in ('/', ''):
+        return Path.objects.get_or_create('/')[0]
+    name.rstrip('/').lstrip('/')
+
+    try:
+        return Path.objects.get(f'/{name}/')
+    except Path.DoesNotExist:
+        base, _, last = name.rpartition('/')
+        return path(base.rstrip()).child(last)
+
+
+def paste(path, content, **kwargs):
+    """
+    Create a new paste object under the given path.
+    """
+
+    path, _, name = path.rpartition('/')
+    path = path(path)
+    return path.paste(name, content, **kwargs)
+
+
+def content_type(name):
+    """
+    Derive content type from extension.
+    """
+    return Python

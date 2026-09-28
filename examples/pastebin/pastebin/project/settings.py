@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'pastebin',
+    'dontpad',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'pastebin.project.urls'
+ROOT_URLCONF = 'dontpad.project.urls'
 
 TEMPLATES = [
     {
@@ -69,7 +69,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'pastebin.project.wsgi.application'
+WSGI_APPLICATION = 'dontpad.project.wsgi.application'
 
 
 # Database
