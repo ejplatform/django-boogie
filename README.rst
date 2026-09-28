@@ -1,3 +1,7 @@
+.. warning::
+
+   This project is no longer maintained. Its main features are now better served by `django-ninja <https://django-ninja.dev>`_ (REST APIs and routing) and `pydantic-settings <https://docs.pydantic.dev/latest/concepts/pydantic_settings/>`_ (class-based settings).
+
 .. image:: https://travis-ci.org/fabiommendes/django-boogie.svg?branch=master
     :target: https://travis-ci.org/fabiommendes/django-boogie/
 
